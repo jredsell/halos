@@ -15,7 +15,7 @@ import { parseSongMarkdown } from './utils/songParser'
 import ConfirmModal from './components/ConfirmModal'
 import { verifyPermission, reResolveMedia, formatVerseRanges, getYoutubeEmbedUrl } from './utils/media'
 
-const TABS = ['Service', 'Songs', 'Bible', 'Videos', 'Images'];
+const TABS = ['Service', 'Songs', 'Bible', 'Videos', 'Images', 'Settings'];
 
 function App() {
 

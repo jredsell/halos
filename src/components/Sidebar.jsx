@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Search, Plus, Layers, File, Music, Image as ImgIcon, Video, FileText, CheckCircle, Check, Trash2, Sparkles } from 'lucide-react';
+import { Search, Plus, Layers, File, Music, Image as ImgIcon, Video, FileText, CheckCircle, Check, Trash2, Sparkles, Settings } from 'lucide-react';
 import BibleModule from './BibleModule';
 import ServiceFlow from './ServiceFlow';
 import { processBibleJson } from '../services/bibleService';
 import ConfirmModal from './ConfirmModal';
+import SettingsView from './SettingsView';
 
 export default function Sidebar({ 
   activeTab, 
@@ -429,6 +430,11 @@ export default function Sidebar({
     e.stopPropagation();
     setFileToDelete(file);
   };
+
+  // 0. Settings View
+  if (activeTab === 'Settings') {
+    return <SettingsView />;
+  }
 
   // 1. Service View
   if (activeTab === 'Service') {
