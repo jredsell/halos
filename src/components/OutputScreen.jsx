@@ -65,6 +65,7 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
        if (payload.isVimeo) {
           urlObj.searchParams.set('api', '1');
           urlObj.searchParams.set('player_id', 'halos-vimeo');
+          urlObj.searchParams.set('autopause', '0');
        }
        urlObj.searchParams.set('controls', '0');
        urlObj.searchParams.set('rel', '0');
@@ -91,8 +92,8 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
      const sendVimeoCommand = (method, value = "") => {
         if (!iframeRef.current?.contentWindow) return;
         const msg = { method, value };
-        // The modern Vimeo player accepts objects directly
-        iframeRef.current.contentWindow.postMessage(msg, '*');
+        // Be explicit with origin for better reliability across browsers
+        iframeRef.current.contentWindow.postMessage(msg, 'https://player.vimeo.com');
      };
 
     const forceUnmute = () => {
@@ -105,15 +106,18 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                 sendIframeCommand('setVolume', [100]);
              }, 100);
           } else if (payload?.isVimeo) {
-              sendVimeoCommand('setVolume', 0);
+              sendVimeoCommand('setMuted', false);
+              sendVimeoCommand('setVolume', 1);
+              sendVimeoCommand('play');
               setTimeout(() => {
+                 sendVimeoCommand('setMuted', false);
                  sendVimeoCommand('setVolume', 1);
                  sendVimeoCommand('play');
                  // If stuck at 0, a tiny seek can sometimes kickstart playback
-                 if (followerTimeRef.current === 0) {
+                 if (followerTimeRef.current <= 0) {
                     sendVimeoCommand('setCurrentTime', 0.1);
                  }
-              }, 200);
+              }, 500);
           }
        }
        if (videoRef.current && isMaster) {
