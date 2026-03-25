@@ -3,7 +3,7 @@ import { useState } from 'react';
 
 export default function SettingsView() {
   const [copied, setCopied] = useState(false);
-  const liveUrl = "https://jredsell.github.io/Halos/";
+  const liveUrl = "https://jredsell.github.io/Halos/?network=true";
   const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(liveUrl)}`;
 
   const handleCopy = () => {
