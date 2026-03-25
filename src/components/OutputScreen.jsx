@@ -50,10 +50,11 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
     // Tracking for Master & Followers
     const followerTimeRef = useRef(0);
     const followerDurationRef = useRef(0);
-    const followerPausedRef = useRef(true);
+    const followerPausedRef = useRef(payload?.isPaused ?? true);
     const lastUrlRef = useRef("");
     const lastSentPauseRef = useRef(null);
     const isMutingReports = useRef(false);
+    const isVimeoReady = useRef(false);
 
     // 1. URL/Mute Engine
     const iframeSrc = useMemo(() => {
@@ -144,9 +145,21 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                  // Vimeo events use 'event' field, responses use 'method' field
                  const eventName = data.event || data.method;
                  
+                 if (eventName === 'ready') {
+                    isVimeoReady.current = true;
+                    sendVimeoCommand('addEventListener', 'play');
+                    sendVimeoCommand('addEventListener', 'pause');
+                    sendVimeoCommand('addEventListener', 'finish');
+                    sendVimeoCommand('addEventListener', 'timeupdate');
+                 }
+
                  if (eventName === 'timeupdate' && data.data) {
                     const time = data.data.seconds;
                     const duration = data.data.duration;
+                    // If we're getting timeupdates, we're likely playing
+                    if (followerPausedRef.current && time > followerTimeRef.current) {
+                        followerPausedRef.current = false;
+                    }
                     statusHandlerRef.current?.({ time, duration, paused: followerPausedRef.current, ts: Date.now() });
                     followerTimeRef.current = time;
                     followerDurationRef.current = duration;
@@ -185,6 +198,13 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
           } else if (payload.isVimeo) {
              sendVimeoCommand('getCurrentTime');
              sendVimeoCommand('getDuration');
+             // Ensure we are subscribed even if we missed the 'ready' event
+             if (!isVimeoReady.current) {
+               sendVimeoCommand('addEventListener', 'play');
+               sendVimeoCommand('addEventListener', 'pause');
+               sendVimeoCommand('addEventListener', 'finish');
+               sendVimeoCommand('addEventListener', 'timeupdate');
+             }
           }
        }, 500); // 500ms for smoother master tracking
 
