@@ -30,7 +30,7 @@ export default function VideoLayer({ url, thumbnailOnly = false }) {
 
   if (isVimeo) {
     const videoId = url.split('vimeo.com/')[1];
-    const embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=1&title=0&byline=0&portrait=0`;
+    const embedUrl = `https://player.vimeo.com/video/${videoId}?autoplay=1&api=1&title=0&byline=0&portrait=0`;
     return (
       <iframe
         className="w-full h-full"

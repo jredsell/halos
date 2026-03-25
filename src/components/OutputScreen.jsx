@@ -61,7 +61,8 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
        let url = payload.activeMediaUrl;
        if (payload.isYouTube) url = getYoutubeEmbedUrl(url);
        const urlObj = new URL(url);
-       urlObj.searchParams.set('enablejsapi', '1');
+       if (payload.isYouTube) urlObj.searchParams.set('enablejsapi', '1');
+       if (payload.isVimeo) urlObj.searchParams.set('api', '1');
        urlObj.searchParams.set('controls', '0');
        urlObj.searchParams.set('rel', '0');
        urlObj.searchParams.set('modestbranding', '1');
@@ -136,13 +137,38 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                 }
              }
 
-             // 2. Vimeo Protocol
-             if (payload.isVimeo) {
-                const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
-                if (data.event === 'timeupdate' && data.data) {
-                   statusHandlerRef.current?.({ time: data.data.seconds, duration: data.data.duration, paused: false, ts: Date.now() });
-                }
-             }
+              // 2. Vimeo Protocol
+              if (payload.isVimeo) {
+                 const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
+                 
+                 // Vimeo events use 'event' field, responses use 'method' field
+                 const eventName = data.event || data.method;
+                 
+                 if (eventName === 'timeupdate' && data.data) {
+                    const time = data.data.seconds;
+                    const duration = data.data.duration;
+                    statusHandlerRef.current?.({ time, duration, paused: followerPausedRef.current, ts: Date.now() });
+                    followerTimeRef.current = time;
+                    followerDurationRef.current = duration;
+                 } else if (eventName === 'play') {
+                    statusHandlerRef.current?.({ paused: false, ts: Date.now() });
+                    followerPausedRef.current = false;
+                 } else if (eventName === 'pause') {
+                    statusHandlerRef.current?.({ paused: true, ts: Date.now() });
+                    followerPausedRef.current = true;
+                 } else if (eventName === 'finish') {
+                    statusHandlerRef.current?.({ paused: true, time: followerDurationRef.current, ts: Date.now() });
+                    followerPausedRef.current = true;
+                 } else if (data.method === 'getCurrentTime') {
+                    const time = data.value;
+                    statusHandlerRef.current?.({ time, ts: Date.now() });
+                    followerTimeRef.current = time;
+                 } else if (data.method === 'getDuration') {
+                    const duration = data.value;
+                    statusHandlerRef.current?.({ duration, ts: Date.now() });
+                    followerDurationRef.current = duration;
+                 }
+              }
           } catch (e) {}
        };
 
