@@ -229,97 +229,99 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
     const isDashboardPreview = !isMaster && !isNetworkViewer;
     const shouldShowLiveContent = payload?.isLive || isDashboardPreview || payload?.isBlackScreen || payload?.isShowLogo;
 
-    if (!payload || !shouldShowLiveContent) {
-       return (
-         <div className="w-full h-full bg-black flex flex-col items-center justify-center p-12 text-center select-none">
-            <h1 className="text-[12cqw] font-black tracking-[0.2em] text-white uppercase relative z-10">Halos</h1>
-         </div>
-       );
-    }
+    const renderContent = () => {
+        if (!payload || !shouldShowLiveContent) {
+           return (
+             <div className="flex flex-col items-center justify-center text-center w-full h-full bg-black">
+                <h1 className="text-[12cqw] font-black tracking-[0.2em] text-white uppercase relative z-10">Halos</h1>
+             </div>
+           );
+        }
+
+        if (payload.isBlackScreen) return <div className="absolute inset-0 bg-black z-40" />;
+        
+        if (payload.isShowLogo && payload.logoUrl) {
+            return (
+              <div className="absolute inset-0 bg-black z-30 flex items-center justify-center">
+                 <img src={payload.logoUrl} className="w-full h-full object-contain animate-in zoom-in-95" />
+              </div>
+            );
+        }
+
+        return (
+           <>
+              {(payload.mediaType === 'image' || payload.mediaType === 'slide_deck') && payload.activeMediaUrl && (
+                 <img src={payload.activeMediaUrl} className="w-full h-full object-cover pointer-events-none" />
+              )}
+              {payload.mediaType === 'video' && payload.activeMediaUrl && (
+                 (payload.isYouTube || payload.isVimeo) ? (
+                    <div className={`w-full h-full relative transition-all duration-500 ${(isMaster && hasInteracted) || !isMaster ? 'pointer-events-none' : ''}`}>
+                      <iframe 
+                        ref={iframeRef} 
+                        src={iframeSrc}
+                        className="w-full h-full scale-[1.01] origin-center" 
+                        style={{ clipPath: 'inset(1% 1% 1% 1%)' }}
+                        frameBorder="0" 
+                        allow="autoplay; fullscreen; encrypted-media"
+                      />
+                    </div>
+                 ) : (
+                    <video 
+                      ref={videoRef} 
+                      src={payload.activeMediaUrl} 
+                      autoPlay={payload.itemAutoPlay} 
+                      muted={isMuted} 
+                      loop 
+                      className={`w-full h-full object-cover transition-all duration-500 ${(isMaster && hasInteracted) || !isMaster ? 'pointer-events-none' : ''}`}
+                      onLoadedMetadata={(e) => {
+                         if (isMaster) {
+                            statusHandlerRef.current?.({ 
+                               duration: e.target.duration, 
+                               time: e.target.currentTime, 
+                               paused: e.target.paused, 
+                               ts: Date.now() 
+                            });
+                         }
+                      }}
+                      onTimeUpdate={(e) => {
+                         if (isMaster) {
+                            const now = Date.now();
+                            if (!videoRef.current._lastReport || now - videoRef.current._lastReport > 500) {
+                               videoRef.current._lastReport = now;
+                               statusHandlerRef.current?.({ 
+                                  time: e.target.currentTime, 
+                                  duration: e.target.duration, 
+                                  paused: e.target.paused, 
+                                  ts: now 
+                               });
+                            }
+                         }
+                      }}
+                      onPlay={() => isMaster && statusHandlerRef.current?.({ paused: false, ts: Date.now() })}
+                      onPause={() => isMaster && statusHandlerRef.current?.({ paused: true, ts: Date.now() })}
+                    />
+                 )
+              )}
+              {payload.activeSlide && payload.activeSlide.length > 0 && (
+                 <AutoFitLyrics lines={payload.activeSlide} isMaster={isMaster} isLiveBroadcast={isLiveBroadcast} isClearText={payload.isClearText} />
+              )}
+              {isMaster && !hasInteracted && payload.mediaType === 'video' && (
+                 <div className="absolute inset-0 bg-blue-600/30 backdrop-blur-xl z-50 flex flex-col items-center justify-center text-white p-12 cursor-pointer">
+                    <div className="bg-blue-600 p-8 rounded-full mb-6 animate-bounce shadow-2xl">
+                       <Volume2 size={64} fill="currentColor" />
+                    </div>
+                    <h2 className="text-4xl font-black uppercase tracking-widest text-shadow">Restore Audio</h2>
+                    <p className="mt-4 text-white/80 font-bold uppercase tracking-widest text-sm text-center">Dashboard requires one interaction to enable core app sound</p>
+                 </div>
+              )}
+           </>
+        );
+    };
 
     return (
       <div className="w-full h-full bg-black overflow-hidden relative font-sans" onClick={() => setHasInteracted(true)}>
-         {!payload?.isBlackScreen && !payload?.isShowLogo && (
-            (payload?.activeSlide?.length > 0 || payload?.activeMediaUrl) ? (
-               <>
-                  {(payload.mediaType === 'image' || payload.mediaType === 'slide_deck') && payload.activeMediaUrl && (
-                     <img src={payload.activeMediaUrl} className="w-full h-full object-cover pointer-events-none" />
-                  )}
-                  {payload.mediaType === 'video' && payload.activeMediaUrl && (
-                     (payload.isYouTube || payload.isVimeo) ? (
-                        <div className={`w-full h-full relative transition-all duration-500 ${(isMaster && hasInteracted) || !isMaster ? 'pointer-events-none' : ''}`}>
-                          <iframe 
-                            ref={iframeRef} 
-                            src={iframeSrc}
-                            className="w-full h-full scale-[1.01] origin-center" 
-                            style={{ clipPath: 'inset(1% 1% 1% 1%)' }}
-                            frameBorder="0" 
-                            allow="autoplay; fullscreen; encrypted-media"
-                          />
-                        </div>
-                     ) : (
-                        <video 
-                          ref={videoRef} 
-                          src={payload.activeMediaUrl} 
-                          autoPlay={payload.itemAutoPlay} 
-                          muted={isMuted} 
-                          loop 
-                          className={`w-full h-full object-cover transition-all duration-500 ${(isMaster && hasInteracted) || !isMaster ? 'pointer-events-none' : ''}`}
-                          onLoadedMetadata={(e) => {
-                             if (isMaster) {
-                                statusHandlerRef.current?.({ 
-                                   duration: e.target.duration, 
-                                   time: e.target.currentTime, 
-                                   paused: e.target.paused, 
-                                   ts: Date.now() 
-                                });
-                             }
-                          }}
-                          onTimeUpdate={(e) => {
-                             if (isMaster) {
-                                // Throttle reporting to avoid React state flood on dashboard
-                                const now = Date.now();
-                                if (!videoRef.current._lastReport || now - videoRef.current._lastReport > 500) {
-                                   videoRef.current._lastReport = now;
-                                   statusHandlerRef.current?.({ 
-                                      time: e.target.currentTime, 
-                                      duration: e.target.duration, 
-                                      paused: e.target.paused, 
-                                      ts: now 
-                                   });
-                                }
-                             }
-                          }}
-                          onPlay={() => isMaster && statusHandlerRef.current?.({ paused: false, ts: Date.now() })}
-                          onPause={() => isMaster && statusHandlerRef.current?.({ paused: true, ts: Date.now() })}
-                        />
-                     )
-                  )}
-                  {payload.activeSlide && payload.activeSlide.length > 0 && (
-                     <AutoFitLyrics lines={payload.activeSlide} isMaster={isMaster} isLiveBroadcast={isLiveBroadcast} isClearText={payload.isClearText} />
-                  )}
-                  {isMaster && !hasInteracted && payload.mediaType === 'video' && (
-                     <div className="absolute inset-0 bg-blue-600/30 backdrop-blur-xl z-50 flex flex-col items-center justify-center text-white p-12 cursor-pointer">
-                        <div className="bg-blue-600 p-8 rounded-full mb-6 animate-bounce shadow-2xl">
-                           <Volume2 size={64} fill="currentColor" />
-                        </div>
-                        <h2 className="text-4xl font-black uppercase tracking-widest text-shadow">Restore Audio</h2>
-                        <p className="mt-4 text-white/80 font-bold uppercase tracking-widest text-sm text-center">Dashboard requires one interaction to enable core app sound</p>
-                     </div>
-                  )}
-               </>
-            ) : (
-               <div className="flex flex-col items-center justify-center text-center w-full h-full bg-black">
-                  <h1 className="text-[12cqw] font-black tracking-[0.2em] text-white uppercase relative z-10">Halos</h1>
-               </div>
-            )
-         )}
-         {payload?.isBlackScreen && <div className="absolute inset-0 bg-black z-40" />}
-         {payload?.isShowLogo && payload?.logoUrl && !payload?.isBlackScreen && (
-            <div className="absolute inset-0 bg-black z-30 flex items-center justify-center">
-               <img src={payload.logoUrl} className="w-full h-full object-contain animate-in zoom-in-95" />
-            </div>
-         )}
+         
+         {renderContent()}
 
          {/* Network Guide Trigger */}
          {isLiveBroadcast && !showGuide && (
