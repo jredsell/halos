@@ -73,7 +73,11 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
        urlObj.searchParams.set('origin', window.location.origin);
        if (!isMaster) urlObj.searchParams.set('autoplay', '1');
        else urlObj.searchParams.set('autoplay', payload.itemAutoPlay ? '1' : '0');
-       urlObj.searchParams.set('mute', isMaster ? '0' : '1');
+       
+       // Always start muted in the URL to ensure the browser allows the player to load and start.
+       // We will unmute via API (forceUnmute) after interaction.
+       if (payload.isYouTube) urlObj.searchParams.set('mute', '1');
+       if (payload.isVimeo) urlObj.searchParams.set('muted', '1');
        return urlObj.toString();
     }, [payload?.activeMediaUrl, isMaster, payload?.isYouTube, payload?.itemAutoPlay]);
 
@@ -236,10 +240,10 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
        // AUTO-UNMUTE: If we get a play command on the dashboard, clear the interaction overlay
        if (isMaster && command === 'play') {
            forceUnmute();
-           followerPausedRef.current = false;
-           statusHandlerRef.current?.({ paused: false, ts: Date.now() });
+           // Don't report status here, wait for the actual 'play' event from the player
        }
        if (isMaster && command === 'pause') {
+           // We can report paused: true immediately to let the UI react
            followerPausedRef.current = true;
            statusHandlerRef.current?.({ paused: true, ts: Date.now() });
        }
