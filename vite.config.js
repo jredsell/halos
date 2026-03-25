@@ -1,4 +1,4 @@
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vite' // Halos V2 Deployment
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
 
