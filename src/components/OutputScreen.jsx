@@ -60,7 +60,11 @@ function AutoFitLiturgy({ lines, liturgyType = 'speaker', alignment = 'center', 
       if (!container || !text) return;
       const maxW = container.clientWidth * (isHighImpact ? 0.8 : 0.95);
       const maxH = container.clientHeight * (isHighImpact ? 0.8 : 0.9);
-      let lo = 8, hi = Math.max(8, container.clientHeight), best = 8;
+      
+      // TARGET UNIFORM SIZE: 8% of screen height (approx 80px on 1080p)
+      const targetSize = Math.round(container.clientHeight * 0.085);
+      
+      let lo = 8, hi = targetSize, best = targetSize;
       while (lo <= hi) {
         const mid = Math.floor((lo + hi) / 2);
         text.style.fontSize = mid + 'px';
@@ -77,11 +81,6 @@ function AutoFitLiturgy({ lines, liturgyType = 'speaker', alignment = 'center', 
 
   return (
     <div ref={containerRef} className={`absolute inset-0 flex flex-col ${flexAlign} justify-center overflow-hidden transition-opacity duration-300 ${paddingClass} ${opacityClass}`}>
-      {isResponse && (
-        <div className={`absolute top-6 ${alignment === 'left' ? 'left-10' : alignment === 'right' ? 'right-10' : 'left-1/2 -translate-x-1/2'} text-[10px] font-black uppercase tracking-[0.3em] opacity-50`} style={{ color: '#fbbf24', fontSize: Math.max(10, fontSize * 0.15) + 'px' }}>
-          ↩ Response
-        </div>
-      )}
       <div
         ref={textRef}
         className={`font-black ${textAlign} leading-[1.2] drop-shadow-[0_4px_48px_rgba(0,0,0,1)] antialiased w-max transition-colors duration-300`}
