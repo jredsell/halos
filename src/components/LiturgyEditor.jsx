@@ -2,7 +2,8 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import { 
   Bold, Italic, Underline, List, ListOrdered, 
   Type, Save, Plus, Trash2, FileText, ChevronRight,
-  MessageSquare, MessageCircle, Eye, Edit3
+  MessageSquare, MessageCircle, Eye, Edit3,
+  AlignLeft, AlignCenter, AlignRight
 } from 'lucide-react';
 import { parseLiturgyMarkdown, buildLiturgyMarkdown } from '../utils/liturgyParser';
 import ConfirmModal from './ConfirmModal';
@@ -36,10 +37,13 @@ function ToolbarBtn({ onClick, title, children, active, variant = 'default' }) {
 // ─── Mini Preview of a Liturgy Slide ──────────────────────────────────────
 function LiturgyPreviewSlide({ slide, isActive, onClick }) {
   const isResponse = slide.type === 'response';
+  const textAlign = slide.alignment === 'left' ? 'text-left' : slide.alignment === 'right' ? 'text-right' : 'text-center';
+  const itemsAlign = slide.alignment === 'left' ? 'items-start' : slide.alignment === 'right' ? 'items-end' : 'items-center';
+
   return (
     <div
       onClick={onClick}
-      className={`p-3 rounded-xl cursor-pointer transition-all border text-left ${
+      className={`p-3 rounded-xl cursor-pointer transition-all border flex flex-col ${itemsAlign} ${
         isActive
           ? isResponse
             ? 'bg-amber-950/40 border-amber-500/50 shadow-[inset_0_0_12px_rgba(245,158,11,0.1)]'
@@ -47,13 +51,14 @@ function LiturgyPreviewSlide({ slide, isActive, onClick }) {
           : 'bg-neutral-900/60 border-neutral-800/60 hover:border-neutral-700'
       }`}
     >
-      <div className={`text-[9px] font-black uppercase tracking-widest mb-1.5 ${isResponse ? 'text-amber-400' : 'text-neutral-400'}`}>
+      <div className={`text-[9px] font-black uppercase tracking-widest mb-1.5 w-full ${textAlign} ${isResponse ? 'text-amber-400' : 'text-neutral-400'}`}>
         {isResponse ? '↩ Response' : '› Speaker'}
+        {slide.alignment !== 'center' && <span className="ml-2 opacity-50">({slide.alignment})</span>}
       </div>
       {slide.content.map((line, i) => (
         <div
           key={i}
-          className={`text-xs font-medium leading-relaxed truncate ${isResponse ? 'text-amber-200/80' : 'text-neutral-300'}`}
+          className={`text-xs font-medium leading-relaxed truncate w-full ${textAlign} ${isResponse ? 'text-amber-200/80' : 'text-neutral-300'}`}
         >
           {line}
         </div>
@@ -102,7 +107,8 @@ export default function LiturgyEditor({
     setIsDirty(false);
   }, [initialFile]);
 
-  const slides = parseLiturgyMarkdown(buildLiturgyMarkdown(title || 'Untitled', body)).slides;
+  // Use a temporary parser for preview with a reasonable default linesPerSlide
+  const slides = parseLiturgyMarkdown(buildLiturgyMarkdown(title || 'Untitled', body), 2).slides;
 
   // ── Text Insertion Helpers ──────────────────────────────────────────────
   const insertAtCursor = useCallback((before, after = '', defaultText = '') => {
@@ -127,7 +133,7 @@ export default function LiturgyEditor({
     if (!ta) return;
     const start = ta.selectionStart;
     const lineStart = ta.value.lastIndexOf('\n', start - 1) + 1;
-    const insert = `\n${tag}\n`;
+    const insert = `${tag}\n`;
     const newVal = ta.value.slice(0, lineStart) + insert + ta.value.slice(lineStart);
     setBody(newVal);
     setIsDirty(true);
@@ -199,7 +205,7 @@ export default function LiturgyEditor({
   };
 
   return (
-    <div className="flex flex-col h-full w-full gap-0 overflow-hidden">
+    <div className="flex flex-col h-full w-full gap-0 overflow-hidden animate-in fade-in duration-300">
 
       {/* ── Top Bar ────────────────────────────────────────────── */}
       <div className="flex items-center gap-3 pb-4 border-b border-neutral-800/60 flex-shrink-0">
@@ -209,25 +215,25 @@ export default function LiturgyEditor({
             placeholder="Liturgy Title..."
             value={title}
             onChange={(e) => { setTitle(e.target.value); setIsDirty(true); }}
-            className="w-full bg-transparent text-white font-extrabold text-xl tracking-wide outline-none placeholder-neutral-600 border-b border-transparent focus:border-neutral-600 transition pb-1"
+            className="w-full bg-transparent text-white font-extrabold text-2xl tracking-tight outline-none placeholder-neutral-700 border-b border-transparent focus:border-neutral-800 transition pb-1"
           />
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <button
             onClick={() => setShowPreview(v => !v)}
-            className={`p-2 rounded-lg transition text-xs font-black uppercase tracking-wider flex items-center gap-1.5 border ${
+            className={`p-2 px-3 rounded-xl transition text-[10px] font-black uppercase tracking-widest flex items-center gap-2 border shadow-lg ${
               showPreview
                 ? 'bg-blue-600/30 text-blue-300 border-blue-500/40'
-                : 'text-neutral-400 border-neutral-800 hover:bg-neutral-800'
+                : 'bg-neutral-900/60 text-neutral-400 border-neutral-800 hover:bg-neutral-800 hover:text-white'
             }`}
           >
             {showPreview ? <Edit3 size={14} /> : <Eye size={14} />}
-            {showPreview ? 'Edit' : 'Preview'}
+            {showPreview ? 'Exit Preview' : 'Show Preview'}
           </button>
           {initialFile && (
             <button
               onClick={() => setShowDeleteConfirm(true)}
-              className="p-2 rounded-lg transition text-neutral-500 hover:text-red-400 hover:bg-red-500/10 border border-neutral-800"
+              className="p-2 rounded-xl transition text-neutral-500 hover:text-red-400 hover:bg-red-500/10 border border-neutral-800"
               title="Delete this file"
             >
               <Trash2 size={14} />
@@ -236,19 +242,52 @@ export default function LiturgyEditor({
           <button
             onClick={handleSave}
             disabled={isSaving || !title.trim()}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs font-black uppercase tracking-wider rounded-xl border border-blue-400/20 shadow-lg transition"
+            className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-[10px] font-black uppercase tracking-widest rounded-xl border border-blue-400/20 shadow-xl transition active:scale-95"
           >
             <Save size={14} />
-            {isSaving ? 'Saving...' : isDirty ? 'Save*' : 'Saved'}
+            {isSaving ? 'Saving...' : isDirty ? 'Save Changes' : 'Saved'}
           </button>
         </div>
       </div>
 
       {/* ── Toolbar ──────────────────────────────────────────────── */}
       {!showPreview && (
-        <div className="flex items-center gap-1 py-3 border-b border-neutral-800/40 flex-shrink-0 flex-wrap">
-          {/* Text formatting */}
-          <div className="flex items-center gap-1 pr-3 border-r border-neutral-800">
+        <div className="flex items-center gap-2 py-4 border-b border-neutral-800/40 flex-shrink-0 flex-wrap">
+          {/* Speaker / Response */}
+          <div className="flex items-center gap-1.5 pr-4 border-r border-neutral-800">
+            <ToolbarBtn
+              onClick={() => insertLineTag('[/speaker]')}
+              title="Speaker Block"
+              variant="speaker"
+            >
+              <MessageSquare size={14} />
+              <span>Speaker</span>
+            </ToolbarBtn>
+            <ToolbarBtn
+              onClick={() => insertLineTag('[/response]')}
+              title="Response Block"
+              variant="response"
+            >
+              <MessageCircle size={14} />
+              <span>Response</span>
+            </ToolbarBtn>
+          </div>
+
+          {/* Alignment */}
+          <div className="flex items-center gap-1 pr-4 border-r border-neutral-800">
+            <ToolbarBtn onClick={() => insertLineTag('[/speaker:left]')} title="Align Left">
+              <AlignLeft size={14} />
+            </ToolbarBtn>
+            <ToolbarBtn onClick={() => insertLineTag('[/speaker:center]')} title="Align Center">
+              <AlignCenter size={14} />
+            </ToolbarBtn>
+            <ToolbarBtn onClick={() => insertLineTag('[/speaker:right]')} title="Align Right">
+              <AlignRight size={14} />
+            </ToolbarBtn>
+          </div>
+
+          {/* Formatting */}
+          <div className="flex items-center gap-1 pr-4 border-r border-neutral-800">
             <ToolbarBtn onClick={() => insertAtCursor('**', '**', 'bold text')} title="Bold">
               <Bold size={14} />
             </ToolbarBtn>
@@ -261,20 +300,17 @@ export default function LiturgyEditor({
           </div>
 
           {/* Headers */}
-          <div className="flex items-center gap-1 pr-3 border-r border-neutral-800">
+          <div className="flex items-center gap-1 pr-4 border-r border-neutral-800">
             <ToolbarBtn onClick={() => insertAtCursor('# ', '', 'Heading 1')} title="Heading 1">
-              <Type size={14} /><span>H1</span>
+              <Type size={14} /><span className="text-[10px]">H1</span>
             </ToolbarBtn>
             <ToolbarBtn onClick={() => insertAtCursor('## ', '', 'Heading 2')} title="Heading 2">
-              <span className="text-[11px]">H2</span>
-            </ToolbarBtn>
-            <ToolbarBtn onClick={() => insertAtCursor('### ', '', 'Heading 3')} title="Heading 3">
-              <span className="text-[10px]">H3</span>
+              <span className="text-[10px]">H2</span>
             </ToolbarBtn>
           </div>
 
           {/* Lists */}
-          <div className="flex items-center gap-1 pr-3 border-r border-neutral-800">
+          <div className="flex items-center gap-1">
             <ToolbarBtn onClick={() => insertListItem('-')} title="Bullet List">
               <List size={14} />
             </ToolbarBtn>
@@ -282,31 +318,11 @@ export default function LiturgyEditor({
               <ListOrdered size={14} />
             </ToolbarBtn>
           </div>
-
-          {/* Speaker / Response */}
-          <div className="flex items-center gap-1.5 pl-1">
-            <ToolbarBtn
-              onClick={() => insertLineTag('[/speaker]')}
-              title="Insert Speaker block"
-              variant="speaker"
-            >
-              <MessageSquare size={13} />
-              <span>Speaker</span>
-            </ToolbarBtn>
-            <ToolbarBtn
-              onClick={() => insertLineTag('[/response]')}
-              title="Insert Response block"
-              variant="response"
-            >
-              <MessageCircle size={13} />
-              <span className="text-amber-300/80">Response</span>
-            </ToolbarBtn>
-          </div>
         </div>
       )}
 
       {/* ── Editor / Preview Pane ──────────────────────────────── */}
-      <div className="flex-1 overflow-hidden flex gap-4 pt-4">
+      <div className="flex-1 overflow-hidden flex gap-6 pt-6">
         {!showPreview ? (
           /* ── Raw Editor ── */
           <div className="flex-1 h-full flex flex-col">
@@ -314,27 +330,28 @@ export default function LiturgyEditor({
               ref={textareaRef}
               value={body}
               onChange={(e) => { setBody(e.target.value); setIsDirty(true); }}
-              placeholder={`Type your liturgy here...\n\nUse the toolbar to add [/speaker] and [/response] blocks.\nExample:\n\n[/speaker]\nThe Lord be with you.\n\n[/response]\nAnd also with you.`}
-              className="flex-1 w-full bg-neutral-950/60 border border-neutral-800/60 rounded-xl text-sm font-mono text-neutral-200 p-5 outline-none resize-none focus:border-neutral-600 transition custom-scrollbar leading-relaxed placeholder-neutral-700"
+              placeholder={`Type your liturgy here...\n\nUse the toolbar to add block markers with alignment.\n\nExample:\n[/speaker:left]\nThis text will be white and left-aligned.\n\n[/response:right]\nThis text will be yellow and right-aligned.`}
+              className="flex-1 w-full bg-neutral-950/40 border border-neutral-800/50 rounded-2xl text-sm font-mono text-neutral-300 p-6 outline-none resize-none focus:border-neutral-700 transition custom-scrollbar leading-relaxed placeholder-neutral-800 shadow-inner"
               spellCheck={true}
             />
-            <div className="text-[10px] text-neutral-600 mt-2 px-1 font-medium">
-              Use <span className="text-white/40 font-mono">[/speaker]</span> and <span className="text-amber-500/40 font-mono">[/response]</span> tags to mark who speaks. Each block becomes one slide on the projector.
+            <div className="text-[10px] text-neutral-600 mt-3 px-1 font-bold uppercase tracking-widest flex items-center gap-3">
+              <span className="text-white/20">Formatting Help:</span>
+              <span>**Bold**</span>
+              <span>*Italic*</span>
+              <span><u>Underline</u></span>
+              <span className="ml-auto opacity-50">Markdown supported</span>
             </div>
           </div>
         ) : (
           /* ── Preview ── */
-          <div className="flex-1 h-full overflow-y-auto custom-scrollbar">
+          <div className="flex-1 h-full overflow-y-auto custom-scrollbar pr-4">
             {slides.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full opacity-30">
-                <FileText size={40} className="text-neutral-600 mb-3" />
-                <div className="text-neutral-500 font-bold text-sm">No content yet</div>
+              <div className="flex flex-col items-center justify-center h-full opacity-20">
+                <FileText size={64} className="text-neutral-500 mb-4" />
+                <div className="text-neutral-400 font-black uppercase tracking-widest">Empty Liturgy</div>
               </div>
             ) : (
-              <div className="space-y-3">
-                <div className="text-[10px] font-black uppercase tracking-widest text-neutral-500 mb-4">
-                  {slides.length} slide{slides.length !== 1 ? 's' : ''} — as they'll appear on the projector
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {slides.map((slide, i) => (
                   <LiturgyPreviewSlide key={i} slide={slide} isActive={false} />
                 ))}
@@ -343,13 +360,14 @@ export default function LiturgyEditor({
           </div>
         )}
 
-        {/* ── Slide-by-slide preview strip (only in edit mode) ── */}
+        {/* ── Slide Strip ── */}
         {!showPreview && slides.length > 0 && (
-          <div className="w-52 flex-shrink-0 h-full overflow-y-auto custom-scrollbar">
-            <div className="text-[9px] font-black uppercase tracking-widest text-neutral-600 mb-3 px-1">
-              {slides.length} Slide{slides.length !== 1 ? 's' : ''}
+          <div className="w-56 flex-shrink-0 h-full overflow-y-auto custom-scrollbar border-l border-neutral-800/30 pl-4">
+            <div className="text-[10px] font-black uppercase tracking-widest text-neutral-700 mb-4 px-1 flex justify-between">
+              <span>Timeline</span>
+              <span>{slides.length} slides</span>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-4 pb-12">
               {slides.map((slide, i) => (
                 <LiturgyPreviewSlide key={i} slide={slide} isActive={false} />
               ))}
@@ -361,10 +379,10 @@ export default function LiturgyEditor({
       <ConfirmModal
         isOpen={showDeleteConfirm}
         title="Delete Liturgy File?"
-        message={`Are you sure you want to permanently delete "${initialFile?.name?.replace('.md', '')}"?`}
+        message={`This will permanently remove "${initialFile?.name?.replace('.md', '')}". This action cannot be undone.`}
         onConfirm={handleDelete}
         onCancel={() => setShowDeleteConfirm(false)}
-        confirmText="Delete File"
+        confirmText="Permanently Delete"
       />
     </div>
   );

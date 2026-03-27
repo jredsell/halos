@@ -1,20 +1,20 @@
 /**
  * Parses a liturgy markdown file into slide objects.
  *
- * Format in the .md file:
- *   [/speaker]
+ * Format:
+ *   [/speaker:left]
  *   Lord have mercy upon us.
  *
- *   [/response]
+ *   [/response:center]
  *   Lord have mercy.
  *
- * Each [/speaker] or [/response] block becomes one slide.
- * Un-tagged text at the start is treated as 'speaker' type.
+ * Each block is split into slides based on linesPerSlide.
  *
  * @param {string} rawText
- * @returns {{ title: string, slides: Array<{type: 'speaker'|'response', content: string[], index: number}> }}
+ * @param {number} linesPerSlide - optional limit for lines in one slide
+ * @returns {{ metadata: object, slides: Array<{type: 'speaker'|'response', alignment: 'left'|'center'|'right', content: string[], index: number}> }}
  */
-export function parseLiturgyMarkdown(rawText) {
+export function parseLiturgyMarkdown(rawText, linesPerSlide = 0) {
   let text = rawText || '';
   const metadata = { title: 'Untitled Liturgy' };
 
@@ -32,48 +32,63 @@ export function parseLiturgyMarkdown(rawText) {
     text = text.replace(yamlMatch[0], '').trim();
   }
 
-  // Split by [/speaker] and [/response] tags
-  const blockRegex = /^\[\/(?:speaker|response)\]$/gm;
-  const tagMatches = [...text.matchAll(/^\[\/(?:speaker|response)\]$/gm)];
+  // Split by [/speaker:alignment] and [/response:alignment] tags
+  // Regex captures: 1=type(speaker/response), 2=alignment(left/center/right)
+  // Flags: g (global), m (multiline), i (case-insensitive)
+  const tagRegex = /^\[\/\s*(speaker|response)\s*(?::\s*(left|center|right)\s*)?\]\s*$/gmi;
+  const tagMatches = [...text.matchAll(tagRegex)];
 
   const slides = [];
   let slideIndex = 1;
 
-  if (tagMatches.length === 0) {
-    // No tags — treat entire doc as one speaker slide
-    const content = text.trim().split('\n').map(l => l.trim()).filter(Boolean);
-    if (content.length > 0) {
-      slides.push({ type: 'speaker', content, index: slideIndex++ });
+  const pushSlides = (type, alignment, blockText) => {
+    const normalizedType = (type || 'speaker').toLowerCase();
+    const normalizedAlignment = (alignment || 'center').toLowerCase();
+    
+    const lines = blockText.split('\n').map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return;
+
+    if (linesPerSlide > 0) {
+      for (let i = 0; i < lines.length; i += linesPerSlide) {
+        slides.push({
+          type: normalizedType,
+          alignment: normalizedAlignment,
+          content: lines.slice(i, i + linesPerSlide),
+          index: slideIndex++
+        });
+      }
+    } else {
+      slides.push({
+        type: normalizedType,
+        alignment: normalizedAlignment,
+        content: lines,
+        index: slideIndex++
+      });
     }
+  };
+
+  if (tagMatches.length === 0) {
+    pushSlides('speaker', 'center', text);
     return { metadata, slides };
   }
 
-  // Check for content before the first tag
-  const firstTagStart = tagMatches[0].index;
-  if (firstTagStart > 0) {
-    const before = text.slice(0, firstTagStart).trim();
-    if (before) {
-      const content = before.split('\n').map(l => l.trim()).filter(Boolean);
-      if (content.length > 0) {
-        slides.push({ type: 'speaker', content, index: slideIndex++ });
-      }
-    }
+  // Content before the first tag
+  if (tagMatches[0].index > 0) {
+    const before = text.slice(0, tagMatches[0].index).trim();
+    if (before) pushSlides('speaker', 'center', before);
   }
 
   // Process each tagged block
   tagMatches.forEach((match, i) => {
-    const tagLine = match[0]; // e.g. '[/speaker]'
-    const type = tagLine.includes('speaker') ? 'speaker' : 'response';
+    const tagLine = match[0];
+    const type = match[1]; // 'speaker' | 'response'
+    const alignment = match[2] || 'center'; // 'left' | 'center' | 'right'
+    
     const blockStart = match.index + tagLine.length;
     const blockEnd = i + 1 < tagMatches.length ? tagMatches[i + 1].index : text.length;
     const blockText = text.slice(blockStart, blockEnd).trim();
 
-    if (!blockText) return;
-
-    const content = blockText.split('\n').map(l => l.trim()).filter(Boolean);
-    if (content.length > 0) {
-      slides.push({ type, content, index: slideIndex++ });
-    }
+    pushSlides(type, alignment, blockText);
   });
 
   return { metadata, slides };

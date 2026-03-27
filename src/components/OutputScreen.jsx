@@ -41,7 +41,7 @@ function AutoFitLyrics({ lines, isMaster = false, isLiveBroadcast = false, isCle
 }
 
 // Liturgy-aware scaler — white for speaker, amber/yellow for response
-function AutoFitLiturgy({ lines, liturgyType = 'speaker', isMaster = false, isLiveBroadcast = false, isClearText = false }) {
+function AutoFitLiturgy({ lines, liturgyType = 'speaker', alignment = 'center', isMaster = false, isLiveBroadcast = false, isClearText = false }) {
   const containerRef = useRef(null);
   const textRef = useRef(null);
   const [fontSize, setFontSize] = useState(20);
@@ -49,6 +49,10 @@ function AutoFitLiturgy({ lines, liturgyType = 'speaker', isMaster = false, isLi
   const paddingClass = isHighImpact ? "px-[10%] py-[10%]" : "p-4";
   const opacityClass = isClearText ? "opacity-0" : "opacity-100";
   const isResponse = liturgyType === 'response';
+  
+  const textAlign = alignment === 'left' ? 'text-left' : alignment === 'right' ? 'text-right' : 'text-center';
+  const flexAlign = alignment === 'left' ? 'items-start' : alignment === 'right' ? 'items-end' : 'items-center';
+
   useEffect(() => {
     const fit = () => {
       const container = containerRef.current;
@@ -70,16 +74,17 @@ function AutoFitLiturgy({ lines, liturgyType = 'speaker', isMaster = false, isLi
     fit();
     return () => ro.disconnect();
   }, [lines, isHighImpact]);
+
   return (
-    <div ref={containerRef} className={`absolute inset-0 flex items-center justify-center overflow-hidden transition-opacity duration-300 ${paddingClass} ${opacityClass}`}>
+    <div ref={containerRef} className={`absolute inset-0 flex flex-col ${flexAlign} justify-center overflow-hidden transition-opacity duration-300 ${paddingClass} ${opacityClass}`}>
       {isResponse && (
-        <div className="absolute top-6 left-1/2 -translate-x-1/2 text-[10px] font-black uppercase tracking-[0.3em] opacity-50" style={{ color: '#fbbf24', fontSize: Math.max(10, fontSize * 0.15) + 'px' }}>
+        <div className={`absolute top-6 ${alignment === 'left' ? 'left-10' : alignment === 'right' ? 'right-10' : 'left-1/2 -translate-x-1/2'} text-[10px] font-black uppercase tracking-[0.3em] opacity-50`} style={{ color: '#fbbf24', fontSize: Math.max(10, fontSize * 0.15) + 'px' }}>
           ↩ Response
         </div>
       )}
       <div
         ref={textRef}
-        className={`font-black text-center leading-[1.2] drop-shadow-[0_4px_48px_rgba(0,0,0,1)] antialiased w-max transition-colors duration-300`}
+        className={`font-black ${textAlign} leading-[1.2] drop-shadow-[0_4px_48px_rgba(0,0,0,1)] antialiased w-max transition-colors duration-300`}
         style={{
           fontSize: fontSize + 'px',
           color: isResponse ? '#fcd34d' : '#ffffff',
@@ -445,6 +450,7 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                  <AutoFitLiturgy
                    lines={payload.activeSlide}
                    liturgyType={payload.liturgyType || 'speaker'}
+                   alignment={payload.liturgyAlignment || 'center'}
                    isMaster={isMaster}
                    isLiveBroadcast={isLiveBroadcast}
                    isClearText={payload.isClearText}

@@ -134,10 +134,12 @@ function App() {
   useEffect(() => {
     if (!isLoaded) return;
     
-    // Only re-shard if it's a song and has rawText source
+    // Only re-shard if it's a song or liturgy and has rawText source
     const reShard = (item) => {
-       if (item?.type === 'song' && item.rawText) {
-          const parsed = parseSongMarkdown(item.rawText, linesPerSlide);
+       if ((item?.type === 'song' || item?.type === 'liturgy') && item.rawText) {
+          const parsed = item.type === 'song'
+            ? parseSongMarkdown(item.rawText, linesPerSlide)
+            : parseLiturgyMarkdown(item.rawText, linesPerSlide);
           return { ...item, slides: parsed.slides };
        }
        return item;
@@ -214,13 +216,14 @@ function App() {
           if (slides[liveSlideIndex]) {
              payload.activeSlide = slides[liveSlideIndex].content;
           }
-       } else if (liveItem.type === 'liturgy') {
-          const slides = liveItem.slides || [];
-          if (slides[liveSlideIndex]) {
-             payload.activeSlide = slides[liveSlideIndex].content;
-             payload.liturgyType = slides[liveSlideIndex].type; // 'speaker' | 'response'
-          }
-       } else if (liveItem.type === 'image' || liveItem.type === 'slide_deck') {
+        } else if (liveItem.type === 'liturgy') {
+           const slides = liveItem.slides || [];
+           if (slides[liveSlideIndex]) {
+              payload.activeSlide = slides[liveSlideIndex].content;
+              payload.liturgyType = slides[liveSlideIndex].type; // 'speaker' | 'response'
+              payload.liturgyAlignment = slides[liveSlideIndex].alignment; // 'left' | 'center' | 'right'
+           }
+        } else if (liveItem.type === 'image' || liveItem.type === 'slide_deck') {
           const imgs = liveItem.images || [];
           if (imgs[liveSlideIndex]) {
              payload.activeMediaUrl = imgs[liveSlideIndex].url;
@@ -517,11 +520,13 @@ function App() {
        if (resolved && resolved[0]) itemToView = resolved[0];
     }
 
-    // Always re-parse songs so linesPerSlide is respected
-    if (item.type === 'song' && item.rawText) {
-       const parsed = parseSongMarkdown(item.rawText, linesPerSlide);
-       itemToView = { ...item, slides: parsed.slides };
-    }
+     // Always re-parse songs and liturgy so linesPerSlide is respected
+     if ((item.type === 'song' || item.type === 'liturgy') && item.rawText) {
+        const parsed = item.type === 'song' 
+          ? parseSongMarkdown(item.rawText, linesPerSlide)
+          : parseLiturgyMarkdown(item.rawText, linesPerSlide);
+        itemToView = { ...item, slides: parsed.slides };
+     }
     // Decoupled Seleciton: Only update Live Output if selecting from the Service tab
     if (activeTab === 'Service') {
        setLiveItem(itemToView);

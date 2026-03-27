@@ -93,8 +93,8 @@ export default function PreviewEditor({
             )
           )}
 
-          {/* Lines per slide toggle — only for songs */}
-          {isSong && onChangeLinesPerSlide && (
+          {/* Lines per slide toggle — only for songs and liturgy */}
+          {(isSong || item.type === 'liturgy') && onChangeLinesPerSlide && (
             <div className="flex items-center gap-1 bg-neutral-900 border border-neutral-800 rounded-xl overflow-hidden p-1">
               <span className="text-[9px] font-black uppercase tracking-widest text-neutral-400 px-2">Lines</span>
               {[1, 2, 3, 4].map(n => (
@@ -146,9 +146,13 @@ export default function PreviewEditor({
                         : 'bg-neutral-900/40 border-neutral-800 hover:border-neutral-700 hover:scale-[1.01] transform'
                   } ${selectedIndices.has(i) ? 'border-blue-500/50' : ''}`}
                 >
-                  <div className={`flex-1 w-full flex items-center justify-center overflow-hidden px-4 py-2`}>
+                  <div className={`flex-1 w-full flex flex-col ${
+                    slide.alignment === 'left' ? 'items-start' : slide.alignment === 'right' ? 'items-end' : 'items-center'
+                  } justify-center overflow-hidden px-6 py-2`}>
                     <div
-                      className={`font-black text-center leading-tight tracking-tight drop-shadow-2xl w-full`}
+                      className={`font-black ${
+                        slide.alignment === 'left' ? 'text-left' : slide.alignment === 'right' ? 'text-right' : 'text-center'
+                      } leading-tight tracking-tight drop-shadow-2xl w-full pr-1`}
                       style={{
                         fontSize: '18px',
                         whiteSpace: 'pre-wrap',
