@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { Volume2 } from 'lucide-react';
+import { Volume2, VolumeX } from 'lucide-react';
 import { getYoutubeEmbedUrl } from '../utils/media';
 
 // High-Impact Smart Scaler
@@ -86,8 +86,9 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
 
     // isMuted controls the <video> element's muted attribute.
     // muteAudio overrides: always mute (used for dashboard preview which should be silent).
-    // Otherwise, projectors/followers follow the normal rule (!isMaster = muted for followers).
-    const isMuted = muteAudio || !isMaster;
+    // Otherwise, projectors/followers follow the normal rule.
+    // Network Viewers (payload.isNetworkViewer) MUST start muted to guarantee autoplay on phones.
+    const isMuted = muteAudio || (payload?.isNetworkViewer ? !hasInteracted : !isMaster);
 
     // Tracking for Master & Followers
     const followerTimeRef = useRef(0);
@@ -146,8 +147,8 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
     // Called when the user (or a remote play command) triggers playback.
     const forceUnmute = () => {
        setHasInteracted(true);
-       if (!isMaster) return; // Only masters control their own audio
-
+       if (muteAudio) return; // Dashboard preview stays silent
+       
        if (payload?.isYouTube) {
           sendIframeCommand('mute');
           setTimeout(() => {
@@ -161,11 +162,13 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
              sendVimeoCommand('setMuted', false);
              sendVimeoCommand('setVolume', 1);
              if (followerTimeRef.current <= 0) sendVimeoCommand('setCurrentTime', 0.1);
+             else sendVimeoCommand('play');
           }, 500);
-       } else if (videoRef.current && !muteAudio) {
+       } else if (videoRef.current) {
           // Local video: unmute programmatically (handles browser autoplay policy edge cases)
           videoRef.current.muted = false;
           videoRef.current.volume = 1;
+          videoRef.current.play().catch(() => {});
        }
     };
 
@@ -473,12 +476,30 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                    isClearText={payload.isClearText}
                  />
               )}
+
+              {/* Network View Mute Overlay (Mobile Autoplay Safety) */}
+              {payload?.isNetworkViewer && !hasInteracted && payload.mediaType === 'video' && (
+                 <div 
+                   className="absolute inset-0 z-[60] bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-8 transition-all cursor-pointer select-none font-sans"
+                   onClick={() => forceUnmute()}
+                 >
+                    <div className="w-24 h-24 rounded-full bg-blue-600/20 border-2 border-blue-500/50 flex items-center justify-center mb-8 animate-pulse shadow-[0_0_50px_rgba(37,99,235,0.3)]">
+                       <VolumeX className="w-12 h-12 text-blue-400" />
+                    </div>
+                    <h2 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter italic text-center leading-none">Audio is Muted</h2>
+                    <p className="text-white/70 text-center max-w-xs mb-10 font-medium leading-relaxed tracking-wide text-[13px]">Mobile browsers block audio by default. Tap anywhere to join the live stream with sound.</p>
+                    <button className="px-12 py-5 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-[0_20px_50px_rgba(37,99,235,0.4)] border border-white/20 text-sm">
+                       Join with Audio
+                    </button>
+                 </div>
+              )}
+
               {needsAudioRestore && (
-                 <div className="absolute inset-0 bg-blue-600/30 backdrop-blur-xl z-50 flex flex-col items-center justify-center text-white p-12 cursor-pointer">
+                 <div className="absolute inset-0 bg-blue-600/30 backdrop-blur-xl z-50 flex flex-col items-center justify-center text-white p-12 cursor-pointer" onClick={() => forceUnmute()}>
                     <div className="bg-blue-600 p-8 rounded-full mb-6 animate-bounce shadow-2xl">
                        <Volume2 size={64} fill="currentColor" />
                     </div>
-                    <h2 className="text-4xl font-black uppercase tracking-widest">Restore Audio</h2>
+                    <h2 className="text-4xl font-black uppercase tracking-widest text-center">Restore Audio</h2>
                     <p className="mt-4 text-white/80 font-bold uppercase tracking-widest text-sm text-center">Click to enable audio on this projector</p>
                  </div>
               )}

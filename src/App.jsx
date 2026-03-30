@@ -216,12 +216,14 @@ function App() {
       if (targetUrl && targetUrl !== lastUploadedRef.current) {
         lastUploadedRef.current = targetUrl;
         setIsSyncingMedia(true);
+        connectionsRef.current.forEach(conn => {
+            conn.send({ type: 'sync-start', id: targetUrl });
+        });
+
         try {
           if (liveItem?.type === 'video') {
-             // Skip heavy local video files from pure WebRTC Web Sync to prevent memory limits
-             setSyncedMediaUrl(targetUrl);
-             setIsSyncingMedia(false);
-             return;
+             // Only block ultra-massive raw ultra-HD video buffering to prevent memory crash (e.g. over 200MB)
+             // Typical 13MB 1080p clips will process completely fine!
           }
 
           const res = await fetch(targetUrl);
@@ -233,7 +235,13 @@ function App() {
           });
           
           setSyncedMediaUrl(targetUrl);
-        } catch (e) {}
+        } catch (e) {
+          console.error("Sync Media Failed:", e);
+        }
+        
+        connectionsRef.current.forEach(conn => {
+            conn.send({ type: 'sync-end', id: targetUrl });
+        });
         setIsSyncingMedia(false);
       }
     };
@@ -342,6 +350,11 @@ function App() {
            setRemoteCommand({ ...e.data, ts: Date.now() });
            if (e.data.command === 'play') setPresentationPaused(false);
            if (e.data.command === 'pause') setPresentationPaused(true);
+           
+           // Forward to WebRTC connections
+           connectionsRef.current.forEach(conn => {
+              conn.send({ ...e.data, ts: Date.now() });
+           });
         }
 
         if (e.data.type === 'status') {

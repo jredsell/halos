@@ -4,6 +4,8 @@ import OutputScreen from './OutputScreen';
 
 const LiveViewer = () => {
   const [networkPayload, setNetworkPayload] = useState(null);
+  const [remoteCommand, setRemoteCommand] = useState(null);
+  const [isSyncing, setIsSyncing] = useState(false);
   const containerRef = useRef(null);
   const [scale, setScale] = useState(1);
 
@@ -44,6 +46,12 @@ const LiveViewer = () => {
              }
              
              setNetworkPayload(payload);
+          } else if (data?.type === 'playback') {
+             setRemoteCommand({ ...data, ts: Date.now() });
+          } else if (data?.type === 'sync-start') {
+             setIsSyncing(true);
+          } else if (data?.type === 'sync-end') {
+             setIsSyncing(false);
           } else if (data?.type === 'media') {
              // Reconstruct isolated binary Buffer to local memory blob map
              const blob = new Blob([data.data], { type: data.mime || 'application/octet-stream' });
@@ -90,9 +98,16 @@ const LiveViewer = () => {
        <OutputScreen 
           payload={networkPayload || { isLive: false }} 
           isLiveBroadcast={true} 
+          remoteCommand={remoteCommand}
        />
        
-       <div className="fixed bottom-4 right-6 text-[10px] font-black text-white/50 uppercase tracking-widest pointer-events-none z-50">
+       <div className="fixed bottom-4 right-6 text-[10px] font-black text-white/50 uppercase tracking-widest pointer-events-none z-50 flex items-center gap-4">
+          {isSyncing && (
+             <div className="flex items-center gap-2 text-blue-400 bg-blue-900/20 px-3 py-1.5 rounded-full border border-blue-500/20 backdrop-blur-md animate-in fade-in slide-in-from-bottom-2">
+                <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse" />
+                Receiving Media...
+             </div>
+          )}
           Halos Live View • WebRTC Secure Tunnel
        </div>
     </div>
