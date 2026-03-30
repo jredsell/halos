@@ -179,6 +179,7 @@ export default defineConfig({
   base: '/halos/',
   server: {
     host: true, // Expose to local network automatically
+    port: 5178, // Bypassing Redly's cached port
   },
   plugins: [
     halosBroadcastPlugin(),

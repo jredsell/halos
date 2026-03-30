@@ -491,7 +491,7 @@ function App() {
        // Re-parse to ensure slides are fresh
        let fresh = item;
        if (item.rawText) {
-         const parsed = parseLiturgyMarkdown(item.rawText);
+         const parsed = parseLiturgyMarkdown(item.rawText, linesPerSlide);
          fresh = { ...item, slides: parsed.slides };
        }
        setSelectedItem(fresh);
