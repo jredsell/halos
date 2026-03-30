@@ -229,27 +229,14 @@ function App() {
           const res = await fetch(targetUrl);
           const blob = await res.blob();
           const buffer = await blob.arrayBuffer();
-          
-          const CHUNK_SIZE = 256 * 1024; // 256KB
-          const totalChunks = Math.ceil(buffer.byteLength / CHUNK_SIZE);
-          const transferId = Math.random().toString(36).substring(7);
+
+          // Yield execution to the main thread briefly so the Projector's <video> element 
+          // can smoothly mount and start playing locally before we block the thread to send.
+          await new Promise(r => setTimeout(r, 150));
 
           connectionsRef.current.forEach(conn => {
-              conn.send({ type: 'media-start', id: targetUrl, mime: blob.type, totalChunks, transferId });
+              conn.send({ type: 'media', id: targetUrl, data: buffer, mime: blob.type });
           });
-
-          for (let i = 0; i < totalChunks; i++) {
-              const start = i * CHUNK_SIZE;
-              const end = Math.min(start + CHUNK_SIZE, buffer.byteLength);
-              const chunk = buffer.slice(start, end);
-              
-              connectionsRef.current.forEach(conn => {
-                  conn.send({ type: 'media-chunk', id: targetUrl, transferId, chunkIndex: i, data: chunk });
-              });
-              
-              // Yield to main thread to prevent extreme video playback jitter when sharing local files
-              await new Promise(r => setTimeout(r, 10));
-          }
           
           setSyncedMediaUrl(targetUrl);
         } catch (e) {

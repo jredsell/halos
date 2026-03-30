@@ -227,7 +227,9 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                 if (eventName === 'timeupdate' && data.data) {
                    const time = data.data.seconds;
                    const duration = data.data.duration;
-                   if (followerPausedRef.current && time > followerTimeRef.current) followerPausedRef.current = false;
+                   
+                   // Removed bug where time > followerTimeRef.current forced the player to unpause spontaneously.
+                   
                    statusHandlerRef.current?.({ time, duration, paused: followerPausedRef.current, ts: Date.now() });
                    followerTimeRef.current = time;
                    followerDurationRef.current = duration;
@@ -299,7 +301,11 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
              sendIframeCommand('seekTo', [value, true]);
              if (followerPausedRef.current) setTimeout(() => sendIframeCommand('pauseVideo'), 300);
           }
-          if (command === 'volume') sendIframeCommand('setVolume', [value * 100]);
+          if (command === 'volume') {
+             if (payload?.isNetworkViewer) return;
+             sendIframeCommand('unMute');
+             sendIframeCommand('setVolume', [value * 100]);
+          }
        } else if (payload?.isVimeo) {
           if (command === 'play') sendVimeoCommand('play');
           if (command === 'pause') sendVimeoCommand('pause');
@@ -307,7 +313,11 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
              sendVimeoCommand('setCurrentTime', value);
              if (followerPausedRef.current) setTimeout(() => sendVimeoCommand('pause'), 300);
           }
-          if (command === 'volume') sendVimeoCommand('setVolume', value);
+          if (command === 'volume') {
+             if (payload?.isNetworkViewer) return;
+             sendVimeoCommand('setMuted', value === 0);
+             sendVimeoCommand('setVolume', value);
+          }
        }
 
        if (videoRef.current) {
@@ -408,15 +418,13 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
 
         // Show the "Restore Audio" overlay ONLY when:
         // - This is a master instance (projector popup or dashboard preview)
-        // - The video is YouTube or Vimeo (those are force-muted by URL params)
+        // - The video is YouTube or Vimeo
         // - The user hasn't interacted yet
-        // - The video is set to autoplay (if it's not autoplaying, it's paused naturally — no overlay needed)
         const needsAudioRestore = isMaster
-            && !muteAudio   // Don't show in the silenced dashboard preview
+            && !muteAudio
             && !hasInteracted
             && payload.mediaType === 'video'
-            && (payload.isYouTube || payload.isVimeo)
-            && payload.itemAutoPlay;
+            && (payload.isYouTube || payload.isVimeo);
 
         return (
            <>
