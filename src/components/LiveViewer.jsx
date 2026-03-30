@@ -10,7 +10,7 @@ const LiveViewer = () => {
   const [scale, setScale] = useState(1);
 
   const mediaMapCache = useRef({});
-
+  const mediaTransferCache = useRef({});
   useEffect(() => {
     const urlParams = new URLSearchParams(window.location.search);
     const roomId = urlParams.get('room');
@@ -52,11 +52,36 @@ const LiveViewer = () => {
              setIsSyncing(true);
           } else if (data?.type === 'sync-end') {
              setIsSyncing(false);
-          } else if (data?.type === 'media') {
-             // Reconstruct isolated binary Buffer to local memory blob map
-             const blob = new Blob([data.data], { type: data.mime || 'application/octet-stream' });
-             const localUrl = URL.createObjectURL(blob);
-             mediaMapCache.current[data.id] = localUrl;
+          } else if (data?.type === 'media-start') {
+             mediaTransferCache.current[data.transferId] = {
+                chunks: new Array(data.totalChunks),
+                received: 0,
+                total: data.totalChunks,
+                mime: data.mime,
+                id: data.id
+             };
+          } else if (data?.type === 'media-chunk') {
+             const transfer = mediaTransferCache.current[data.transferId];
+             if (transfer) {
+                transfer.chunks[data.chunkIndex] = data.data;
+                transfer.received++;
+                if (transfer.received === transfer.total) {
+                   const blob = new Blob(transfer.chunks, { type: transfer.mime || 'application/octet-stream' });
+                   const localUrl = URL.createObjectURL(blob);
+                   mediaMapCache.current[transfer.id] = localUrl;
+                   delete mediaTransferCache.current[data.transferId];
+                   
+                   // Force re-evaluating payload immediately so UI updates with fresh local blob
+                   setNetworkPayload(prev => {
+                       if (!prev) return prev;
+                       const copy = { ...prev };
+                       let changed = false;
+                       if (copy.logoUrl === transfer.id) { copy.logoUrl = localUrl; changed = true; }
+                       if (copy.activeMediaUrl === transfer.id) { copy.activeMediaUrl = localUrl; changed = true; }
+                       return changed ? copy : prev;
+                   });
+                }
+             }
           }
         });
         

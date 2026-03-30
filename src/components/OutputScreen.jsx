@@ -84,11 +84,11 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
     const iframeRef = useRef(null);
     const [hasInteracted, setHasInteracted] = useState(false);
 
-    // isMuted controls the <video> element's muted attribute.
-    // muteAudio overrides: always mute (used for dashboard preview which should be silent).
-    // Otherwise, projectors/followers follow the normal rule.
-    // Network Viewers (payload.isNetworkViewer) MUST start muted to guarantee autoplay on phones.
-    const isMuted = muteAudio || (payload?.isNetworkViewer ? !hasInteracted : !isMaster);
+    // Network Viewers (payload.isNetworkViewer) MUST be kept muted permanently to ensure continuous mobile silent autoplay.
+    const isMuted = muteAudio || !isMaster;
+
+    const hasInteractedRef = useRef(false);
+    useEffect(() => { hasInteractedRef.current = hasInteracted; }, [hasInteracted]);
 
     // Tracking for Master & Followers
     const followerTimeRef = useRef(0);
@@ -188,6 +188,12 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                 const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
                 const info = data.info || data.data;
                 if ((data.event === 'infoDelivery' || data.event === 'initialDelivery' || data.event === 'onStateChange') && info) {
+                   
+                   if ((data.event === 'initialDelivery' || data.event === 'infoDelivery') && hasInteractedRef.current && isMaster && !muteAudio) {
+                      sendIframeCommand('unMute');
+                      sendIframeCommand('setVolume', [100]);
+                   }
+
                    const time = info.currentTime ?? followerTimeRef.current;
                    const duration = info.duration ?? followerDurationRef.current;
                    const paused = info.playerState !== undefined ? (info.playerState !== 1 && info.playerState !== 3) : followerPausedRef.current;
@@ -210,6 +216,12 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                    sendVimeoCommand('addEventListener', 'pause');
                    sendVimeoCommand('addEventListener', 'finish');
                    sendVimeoCommand('addEventListener', 'timeupdate');
+                   
+                   if (hasInteractedRef.current && isMaster && !muteAudio) {
+                      sendVimeoCommand('setMuted', false);
+                      sendVimeoCommand('setVolume', 1);
+                   }
+                   
                    if (!followerPausedRef.current) sendVimeoCommand('play');
                 }
                 if (eventName === 'timeupdate' && data.data) {
@@ -477,22 +489,7 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                  />
               )}
 
-              {/* Network View Mute Overlay (Mobile Autoplay Safety) */}
-              {payload?.isNetworkViewer && !hasInteracted && payload.mediaType === 'video' && (
-                 <div 
-                   className="absolute inset-0 z-[60] bg-black/60 backdrop-blur-md flex flex-col items-center justify-center p-8 transition-all cursor-pointer select-none font-sans"
-                   onClick={() => forceUnmute()}
-                 >
-                    <div className="w-24 h-24 rounded-full bg-blue-600/20 border-2 border-blue-500/50 flex items-center justify-center mb-8 animate-pulse shadow-[0_0_50px_rgba(37,99,235,0.3)]">
-                       <VolumeX className="w-12 h-12 text-blue-400" />
-                    </div>
-                    <h2 className="text-3xl font-black text-white mb-3 uppercase tracking-tighter italic text-center leading-none">Audio is Muted</h2>
-                    <p className="text-white/70 text-center max-w-xs mb-10 font-medium leading-relaxed tracking-wide text-[13px]">Mobile browsers block audio by default. Tap anywhere to join the live stream with sound.</p>
-                    <button className="px-12 py-5 bg-gradient-to-br from-blue-600 to-indigo-700 text-white rounded-3xl font-black uppercase tracking-[0.2em] hover:scale-105 active:scale-95 transition-all shadow-[0_20px_50px_rgba(37,99,235,0.4)] border border-white/20 text-sm">
-                       Join with Audio
-                    </button>
-                 </div>
-              )}
+
 
               {needsAudioRestore && (
                  <div className="absolute inset-0 bg-blue-600/30 backdrop-blur-xl z-50 flex flex-col items-center justify-center text-white p-12 cursor-pointer" onClick={() => forceUnmute()}>

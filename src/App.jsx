@@ -230,9 +230,26 @@ function App() {
           const blob = await res.blob();
           const buffer = await blob.arrayBuffer();
           
+          const CHUNK_SIZE = 256 * 1024; // 256KB
+          const totalChunks = Math.ceil(buffer.byteLength / CHUNK_SIZE);
+          const transferId = Math.random().toString(36).substring(7);
+
           connectionsRef.current.forEach(conn => {
-              conn.send({ type: 'media', id: targetUrl, data: buffer, mime: blob.type });
+              conn.send({ type: 'media-start', id: targetUrl, mime: blob.type, totalChunks, transferId });
           });
+
+          for (let i = 0; i < totalChunks; i++) {
+              const start = i * CHUNK_SIZE;
+              const end = Math.min(start + CHUNK_SIZE, buffer.byteLength);
+              const chunk = buffer.slice(start, end);
+              
+              connectionsRef.current.forEach(conn => {
+                  conn.send({ type: 'media-chunk', id: targetUrl, transferId, chunkIndex: i, data: chunk });
+              });
+              
+              // Yield to main thread to prevent extreme video playback jitter when sharing local files
+              await new Promise(r => setTimeout(r, 10));
+          }
           
           setSyncedMediaUrl(targetUrl);
         } catch (e) {
