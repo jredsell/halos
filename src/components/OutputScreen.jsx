@@ -185,12 +185,15 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
        if (!payload?.activeMediaUrl) return;
        if (!payload.isYouTube && !payload.isVimeo) return;
 
+       let isYouTubeListening = false;
+
        const handleMessage = (event) => {
           try {
              if (payload.isYouTube) {
                 const data = typeof event.data === 'string' ? JSON.parse(event.data) : event.data;
                 const info = data.info || data.data;
                 if ((data.event === 'infoDelivery' || data.event === 'initialDelivery' || data.event === 'onStateChange') && info) {
+                   isYouTubeListening = true;
                    
                    if ((data.event === 'initialDelivery' || data.event === 'infoDelivery') && hasInteractedRef.current && isMaster && !muteAudio) {
                       sendIframeCommand('unMute');
@@ -262,7 +265,9 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
           if (!iframeRef.current?.contentWindow) return;
           const win = iframeRef.current.contentWindow;
           if (payload.isYouTube) {
-             win.postMessage(JSON.stringify({ event: "listening" }), "*");
+             if (!isYouTubeListening) {
+                 win.postMessage(JSON.stringify({ event: "listening" }), "*");
+             }
              win.postMessage(JSON.stringify({ event: "command", func: "getDuration" }), "*");
              win.postMessage(JSON.stringify({ event: "command", func: "getCurrentTime" }), "*");
           } else if (payload.isVimeo) {
