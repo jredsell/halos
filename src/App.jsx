@@ -19,7 +19,7 @@ import ConfirmModal from './components/ConfirmModal'
 import { verifyPermission, reResolveMedia, formatVerseRanges, getYoutubeEmbedUrl } from './utils/media'
 import OutputScreen from './components/OutputScreen'
 
-const TABS = ['Service', 'Songs', 'Bible', 'Liturgy', 'Videos', 'Images', 'Settings'];
+const TABS = ['Service', 'Songs', 'Bible', 'Liturgy', 'Videos', 'Images', 'Music', 'Settings'];
 
 function App() {
 
@@ -207,7 +207,9 @@ function App() {
     const syncMedia = async () => {
       let targetUrl = null;
       if (isShowLogo && logoUrl?.startsWith('blob:')) targetUrl = logoUrl;
-      else if (liveItem?.url?.startsWith('blob:')) targetUrl = liveItem.url;
+      else if (liveItem?.url?.startsWith('blob:')) {
+         if (liveItem.type !== 'audio') targetUrl = liveItem.url;
+      }
       else if (liveItem?.type === 'image' || liveItem?.type === 'slide_deck') {
          const img = liveItem.images?.[liveSlideIndex];
          if (img?.url?.startsWith('blob:')) targetUrl = img.url;
@@ -221,7 +223,7 @@ function App() {
         });
 
         try {
-          if (liveItem?.type === 'video') {
+          if (liveItem?.type === 'video' || liveItem?.type === 'audio') {
              // Only block ultra-massive raw ultra-HD video buffering to prevent memory crash (e.g. over 200MB)
              // Typical 13MB 1080p clips will process completely fine!
           }
@@ -294,6 +296,8 @@ function App() {
           if (imgs[liveSlideIndex]) {
              payload.activeMediaUrl = imgs[liveSlideIndex].url;
           }
+        } else if (liveItem.type === 'audio') {
+           payload.activeMediaUrl = liveItem.url || '';
         } else if (liveItem.type === 'video') {
            let finalUrl = liveItem.url || '';
            const isYouTube = liveItem.isYouTube || finalUrl.includes('youtube.com') || finalUrl.includes('youtu.be');

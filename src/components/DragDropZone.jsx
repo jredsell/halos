@@ -92,7 +92,7 @@ export default function DragDropZone({ libraryHandle, children }) {
              if (['md', 'txt'].includes(ext)) targetFolder = 'Songs';
              else if (['mp4', 'mov', 'webm'].includes(ext)) targetFolder = 'Videos';
              else if (['jpg', 'jpeg', 'png', 'gif'].includes(ext)) targetFolder = 'Images';
-             else if (['mp3', 'wav', 'm4a'].includes(ext)) targetFolder = 'Music';
+             else if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext)) targetFolder = 'Music';
 
              try {
                const dirHandle = await libraryHandle.getDirectoryHandle(targetFolder, { create: true });

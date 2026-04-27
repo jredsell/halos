@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { Search, Plus, Layers, File, Music, Image as ImgIcon, Video, FileText, CheckCircle, Check, Trash2, Sparkles, Settings, BookOpen } from 'lucide-react';
+import { Search, Plus, Layers, File, Music, Image as ImgIcon, Video, FileText, CheckCircle, Check, Trash2, Sparkles, Settings, BookOpen, Headphones } from 'lucide-react';
 import BibleModule from './BibleModule';
 import ServiceFlow from './ServiceFlow';
 import { processBibleJson } from '../services/bibleService';
@@ -369,6 +369,9 @@ export default function Sidebar({
     } else if (['mp4', 'webm', 'mov'].includes(ext)) {
        previewItem.isVideo = true;
        previewItem.type = 'video';
+    } else if (['mp3', 'wav', 'm4a', 'aac', 'ogg', 'flac'].includes(ext)) {
+       previewItem.isAudio = true;
+       previewItem.type = 'audio';
     } else if (['ppt', 'pptx', 'pdf', 'doc', 'docx', 'xls', 'xlsx', 'key', 'pages', 'numbers'].includes(ext)) {
        previewItem.isDocument = true;
        previewItem.type = 'document';
@@ -791,12 +794,13 @@ export default function Sidebar({
     );
   }
 
-  // 4. Generic Folder View (Documents, Videos, Images)
+  // 4. Generic Folder View (Documents, Videos, Images, Music)
   const IconProps = { size: 14, className: "text-neutral-400" };
   const getIcon = () => {
       switch(activeTab) {
           case 'Videos': return <Video {...IconProps} />;
           case 'Images': return <ImgIcon {...IconProps} />;
+          case 'Music': return <Headphones {...IconProps} />;
           default: return <File {...IconProps} />;
       }
   };

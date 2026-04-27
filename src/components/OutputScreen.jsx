@@ -519,6 +519,47 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                     />
                  )
               )}
+              {payload.mediaType === 'audio' && payload.activeMediaUrl && !new URLSearchParams(window.location.search).get('projector') && !new URLSearchParams(window.location.search).get('network') && (
+                  <audio
+                    ref={videoRef}
+                    src={payload.activeMediaUrl}
+                    autoPlay={isMaster ? payload.itemAutoPlay : true}
+                    muted={isMuted}
+                    loop
+                    className="hidden"
+                    onLoadedMetadata={(e) => {
+                       if (isMaster) {
+                          if (!muteAudio) { e.target.muted = false; e.target.volume = 1; }
+                          statusHandlerRef.current?.({
+                             duration: e.target.duration,
+                             time: e.target.currentTime,
+                             paused: e.target.paused,
+                             ts: Date.now()
+                          });
+                       } else if (payload) {
+                          const target = payload.currentTime + (payload.isPaused ? 0 : ((Date.now() - (payload.currentTimeTs || Date.now())) / 1000));
+                          e.target.currentTime = target;
+                          if (!payload.isPaused) e.target.play().catch(() => {});
+                       }
+                    }}
+                    onTimeUpdate={(e) => {
+                       if (isMaster) {
+                          const now = Date.now();
+                          if (!videoRef.current._lastReport || now - videoRef.current._lastReport > 250) {
+                             videoRef.current._lastReport = now;
+                             statusHandlerRef.current?.({
+                                time: e.target.currentTime,
+                                duration: e.target.duration,
+                                paused: e.target.paused,
+                                ts: now
+                             });
+                          }
+                       }
+                    }}
+                    onPlay={() => isMaster && statusHandlerRef.current?.({ paused: false, ts: Date.now() })}
+                    onPause={() => isMaster && statusHandlerRef.current?.({ paused: true, ts: Date.now() })}
+                  />
+              )}
               {(payload.mediaType === 'song' || payload.mediaType === 'bible') && payload.activeSlide && payload.activeSlide.length > 0 && (
                  <AutoFitLyrics lines={payload.activeSlide} isMaster={isMaster} isLiveBroadcast={isLiveBroadcast} isClearText={payload.isClearText} />
               )}
