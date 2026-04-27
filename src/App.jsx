@@ -64,6 +64,7 @@ function App() {
   const [systemTrigger, refreshLibrary] = useFileSystemWatcher(libraryHandle);
   const searchState = useSearchIndexer(libraryHandle, systemTrigger);
   const folderFiles = useFolderContents(libraryHandle, activeTab, systemTrigger);
+  const musicFiles = useFolderContents(libraryHandle, 'Music', systemTrigger);
 
   // Handshake and Init
   useEffect(() => {
@@ -965,6 +966,7 @@ function App() {
                  setPresentationPaused={setPresentationPaused}
                  isSyncingMedia={isSyncingMedia}
                  roomId={roomId}
+                 musicFiles={musicFiles}
               />
             </div>
           </main>

@@ -13,10 +13,45 @@ export default function LiveControl({
     presentationPaused = true,
     setPresentationPaused = () => {},
     isSyncingMedia = false,
-    roomId = null
+    roomId = null,
+    musicFiles = []
 }) {
   const [playVolume, setPlayVolume] = useState(1);
   const [scrubTime, setScrubTime] = useState(0);
+  
+  // Background Music state
+  const [bgmFile, setBgmFile] = useState('');
+  const [bgmUrl, setBgmUrl] = useState(null);
+  const [bgmPaused, setBgmPaused] = useState(false);
+  const [bgmVolume, setBgmVolume] = useState(0.5);
+  const bgmAudioRef = useRef(null);
+
+  useEffect(() => {
+    if (!bgmFile) {
+       setBgmUrl(null);
+       return;
+    }
+    const match = musicFiles?.find(f => f.name === bgmFile);
+    if (!match) return;
+    
+    let isCancelled = false;
+    match.handle.getFile().then(file => {
+       if (!isCancelled) setBgmUrl(URL.createObjectURL(file));
+    });
+    return () => { isCancelled = true; }
+  }, [bgmFile, musicFiles]);
+
+  useEffect(() => {
+    if (bgmAudioRef.current) {
+        if (bgmPaused) bgmAudioRef.current.pause();
+        else {
+           bgmAudioRef.current.muted = false;
+           bgmAudioRef.current.volume = bgmVolume;
+           bgmAudioRef.current.play().catch(() => {});
+        }
+    }
+  }, [bgmPaused, bgmVolume, bgmUrl]);
+
 
   // localStatus is updated IMMEDIATELY when the preview's OutputScreen reports an event.
   // This gives instant playhead movement and icon state without waiting for the
@@ -303,6 +338,50 @@ export default function LiveControl({
            </div>
         )}
       </div>
+
+      {/* 3. Background Music Control */}
+      <div className="w-full bg-neutral-900/80 border border-neutral-800 rounded-xl p-3 shadow-xl">
+          <div className="flex items-center justify-between mb-2 px-1">
+              <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-widest flex items-center gap-1.5"><Volume2 size={12}/> Background Music</span>
+          </div>
+          
+          <select 
+             value={bgmFile} 
+             onChange={(e) => {
+                 setBgmFile(e.target.value);
+                 if (e.target.value) setBgmPaused(false);
+             }}
+             className="w-full bg-neutral-950 border border-neutral-800 rounded-lg text-xs py-2 px-2 text-white outline-none focus:border-blue-500 transition mb-2"
+          >
+             <option value="">No background music</option>
+             {musicFiles?.map(f => (
+                <option key={f.name} value={f.name}>{f.name}</option>
+             ))}
+          </select>
+
+          {bgmFile && (
+             <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setBgmPaused(!bgmPaused)}
+                  className="w-7 h-7 bg-purple-600 hover:bg-purple-500 text-white rounded-full flex items-center justify-center transition active:scale-95 shadow-lg flex-shrink-0"
+                >
+                   {bgmPaused
+                     ? <Play size={12} fill="currentColor" className="ml-0.5" />
+                     : <Pause size={12} fill="currentColor" />}
+                </button>
+                <div className="flex-1 flex items-center gap-2">
+                    <VolumeX size={12} className="text-neutral-600" />
+                    <input
+                        type="range" min="0" max="1" step="0.05"
+                        value={bgmVolume}
+                        onChange={(e) => setBgmVolume(parseFloat(e.target.value))}
+                        className="flex-1 h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                    />
+                </div>
+             </div>
+          )}
+      </div>
+      {bgmUrl && <audio ref={bgmAudioRef} src={bgmUrl} loop className="hidden" />}
 
       {/* GO LIVE button */}
       <button
