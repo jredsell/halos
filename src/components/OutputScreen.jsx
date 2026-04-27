@@ -165,13 +165,15 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
              sendVimeoCommand('setMuted', false);
              sendVimeoCommand('setVolume', 1);
              if (followerTimeRef.current <= 0) sendVimeoCommand('setCurrentTime', 0.1);
-             else sendVimeoCommand('play');
+             else if (!payload?.isPaused) sendVimeoCommand('play');
           }, 500);
        } else if (videoRef.current) {
           // Local video: unmute programmatically (handles browser autoplay policy edge cases)
           videoRef.current.muted = false;
           videoRef.current.volume = 1;
-          videoRef.current.play().catch(() => {});
+          if (!payload?.isPaused) {
+              videoRef.current.play().catch(() => {});
+          }
        }
     };
 

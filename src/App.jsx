@@ -587,7 +587,7 @@ function App() {
   if (isProjectorView) {
     return (
        <div className="w-screen h-screen bg-black overflow-hidden relative">
-          <OutputScreen payload={livePayload} isMaster={true} onStatusUpdate={(s) => { const bc = new BroadcastChannel('halos-projector-hub'); bc.postMessage({ type: 'status', time: s.time, duration: s.duration, paused: s.paused, ts: s.ts || Date.now() }); bc.close(); }} remoteCommand={remoteCommand} />
+          <OutputScreen payload={livePayload} isMaster={false} remoteCommand={remoteCommand} />
        </div>
     );
   }
