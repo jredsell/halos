@@ -61,6 +61,25 @@ export default function SettingsView({ roomId, churchName, setChurchName }) {
         </div>
       </div>
 
+      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl p-5 flex flex-col gap-4 shadow-xl mt-4">
+        <div className="text-xs font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2 mb-2">
+           <Building2 size={14} className="text-blue-400" /> Storage Settings
+        </div>
+        
+        <div className="flex flex-col gap-2">
+            <label className="text-[10px] font-black text-neutral-500 uppercase tracking-widest">Media Library Location</label>
+            <button 
+               onClick={onChangeLibrary}
+               className="w-full bg-neutral-800 hover:bg-neutral-700 active:bg-neutral-600 border border-neutral-700/50 text-white font-semibold py-3 rounded-xl transition text-sm flex items-center justify-center gap-2 shadow-sm"
+            >
+               Change Media Library Folder
+            </button>
+            <p className="text-[10px] text-neutral-500 mt-1 leading-relaxed">
+               Click this to select a new base folder for your HALOS library. This will reload the application.
+            </p>
+        </div>
+      </div>
+
     </div>
   );
 }

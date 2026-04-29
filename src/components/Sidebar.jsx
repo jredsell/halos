@@ -35,7 +35,8 @@ export default function Sidebar({
   churchName,
   setChurchName,
   stickyAudioId,
-  onToggleSticky
+  onToggleSticky,
+  onChangeLibrary
 }) {
   const [localQuery, setLocalQuery] = useState('');
   const [showAdded, setShowAdded] = useState(false);
@@ -493,7 +494,7 @@ export default function Sidebar({
 
   // 0. Settings View
   if (activeTab === 'Settings') {
-    return <SettingsView roomId={roomId} churchName={churchName} setChurchName={setChurchName} />;
+    return <SettingsView roomId={roomId} churchName={churchName} setChurchName={setChurchName} onChangeLibrary={onChangeLibrary} />;
   }
 
   // 0b. Liturgy View

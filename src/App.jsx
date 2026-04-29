@@ -84,6 +84,17 @@ function FolderExplorer({ folderName, handle, onSelectItem, onBack }) {
 function App() {
 
   const [libraryHandle, setLibraryHandle] = useState(null)
+  
+  const handleChangeLibraryPath = async () => {
+      try {
+         const { del } = await import('idb-keyval');
+         await del('halos_library_handle');
+         window.location.reload();
+      } catch (err) {
+         console.error('Failed to clear library handle', err);
+      }
+  };
+
   const projectorWindowRef = useRef(null);
   const peerRef = useRef(null);
   const connectionsRef = useRef([]);
@@ -656,7 +667,7 @@ function App() {
     let itemToView = { ...item };
     
     // Self-healing: If it's a service item with media, re-resolve URLs from library instantly
-    if (libraryHandle && (item.type === 'video' || item.type === 'image' || item.type === 'slide_deck')) {
+    if (libraryHandle && (item.type === 'video' || item.type === 'image' || item.type === 'slide_deck' || item.type === 'audio')) {
        const resolved = await reResolveMedia([item], libraryHandle);
        if (resolved && resolved[0]) itemToView = resolved[0];
     }
@@ -887,6 +898,7 @@ function App() {
                  onSaveService={handleSaveService}
                  onLoadService={handleLoadService}
                  onClearService={handleClearService}
+                 onChangeLibrary={handleChangeLibraryPath}
                   playbackStatus={playbackStatus}
                  roomId={roomId}
                  liveItemId={liveItem?.id}
