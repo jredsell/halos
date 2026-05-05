@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MonitorPlay, MonitorX, Image as ImageIcon, Plus, Play, Pause, RotateCcw, Volume2, VolumeX } from 'lucide-react';
+import { MonitorPlay, MonitorX, Image as ImageIcon, Plus, Play, Pause, RotateCcw, Volume2, VolumeX, Repeat, Repeat1 } from 'lucide-react';
 import OutputScreen from './OutputScreen';
 
 export default function LiveControl({ 
@@ -24,6 +24,7 @@ export default function LiveControl({
   const [bgmUrl, setBgmUrl] = useState(null);
   const [bgmPaused, setBgmPaused] = useState(false);
   const [bgmVolume, setBgmVolume] = useState(0.5);
+  const [bgmPlaylistMode, setBgmPlaylistMode] = useState(false);
   const bgmAudioRef = useRef(null);
 
   const [flatAudioFiles, setFlatAudioFiles] = useState([]);
@@ -411,6 +412,13 @@ export default function LiveControl({
                      ? <Play size={12} fill="currentColor" className="ml-0.5" />
                      : <Pause size={12} fill="currentColor" />}
                 </button>
+                <button
+                   onClick={() => setBgmPlaylistMode(!bgmPlaylistMode)}
+                   className={`p-1.5 rounded-lg transition ${bgmPlaylistMode ? 'bg-purple-500/20 text-purple-400' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400'}`}
+                   title={bgmPlaylistMode ? "Playlist Mode (Folder)" : "Loop Single Track"}
+                >
+                   {bgmPlaylistMode ? <Repeat size={14} /> : <Repeat1 size={14} />}
+                </button>
                 <div className="flex-1 flex items-center gap-2">
                     <VolumeX size={12} className="text-neutral-600" />
                     <input
@@ -423,7 +431,24 @@ export default function LiveControl({
              </div>
           )}
       </div>
-      {bgmUrl && <audio ref={bgmAudioRef} src={bgmUrl} loop className="hidden" />}
+      {bgmUrl && (
+          <audio 
+             ref={bgmAudioRef} 
+             src={bgmUrl} 
+             loop={!bgmPlaylistMode} 
+             onEnded={() => {
+                 if (bgmPlaylistMode) {
+                     const currentIndex = flatAudioFiles.findIndex(f => f.displayPath === bgmFile);
+                     if (currentIndex !== -1 && currentIndex < flatAudioFiles.length - 1) {
+                         setBgmFile(flatAudioFiles[currentIndex + 1].displayPath);
+                     } else if (flatAudioFiles.length > 0) {
+                         setBgmFile(flatAudioFiles[0].displayPath);
+                     }
+                 }
+             }}
+             className="hidden" 
+          />
+      )}
 
       {/* GO LIVE button */}
       <button
