@@ -21,7 +21,7 @@ export default function SettingsView({ roomId, churchName, setChurchName, onChan
   };
 
   return (
-    <div className="flex flex-col h-full gap-6 pt-2 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
+    <div className="flex-1 flex flex-col h-full overflow-y-auto custom-scrollbar pr-2 pb-12 gap-6 pt-2 w-full animate-in fade-in slide-in-from-bottom-2 duration-500">
       <div className="text-xs font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
          <Share2 size={14} className="text-blue-400" /> Network Setup & Sharing
       </div>
