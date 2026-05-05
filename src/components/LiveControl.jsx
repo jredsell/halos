@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MonitorPlay, MonitorX, Image as ImageIcon, Plus, Play, Pause, RotateCcw, Volume2, VolumeX, Repeat, Repeat1 } from 'lucide-react';
+import { MonitorPlay, MonitorX, Image as ImageIcon, Plus, Play, Pause, RotateCcw, Volume2, VolumeX, Repeat, Repeat1, SkipBack, SkipForward, ArrowRight } from 'lucide-react';
 import OutputScreen from './OutputScreen';
 
 export default function LiveControl({ 
@@ -24,8 +24,24 @@ export default function LiveControl({
   const [bgmUrl, setBgmUrl] = useState(null);
   const [bgmPaused, setBgmPaused] = useState(false);
   const [bgmVolume, setBgmVolume] = useState(0.5);
-  const [bgmPlaylistMode, setBgmPlaylistMode] = useState(false);
+  const [bgmMode, setBgmMode] = useState('playlist'); // 'playlist' | 'single-no-repeat' | 'single-repeat'
+  const [bgmCurrentTime, setBgmCurrentTime] = useState(0);
+  const [bgmDuration, setBgmDuration] = useState(0);
   const bgmAudioRef = useRef(null);
+  const bgmDraggingRef = useRef(false);
+  const bgmPreMuteVolumeRef = useRef(0.5);
+
+  const handleBgmSkip = (direction) => {
+     if (!bgmFile || !flatAudioFiles.length) return;
+     const currentIndex = flatAudioFiles.findIndex(f => f.displayPath === bgmFile);
+     if (currentIndex === -1) return;
+     
+     let nextIndex = currentIndex + direction;
+     if (nextIndex < 0) nextIndex = flatAudioFiles.length - 1;
+     if (nextIndex >= flatAudioFiles.length) nextIndex = 0;
+     
+     setBgmFile(flatAudioFiles[nextIndex].displayPath);
+  };
 
   const [flatAudioFiles, setFlatAudioFiles] = useState([]);
 
@@ -403,31 +419,90 @@ export default function LiveControl({
           </select>
 
           {bgmFile && (
-             <div className="flex items-center gap-3">
-                <button
-                  onClick={() => setBgmPaused(!bgmPaused)}
-                  className="w-7 h-7 bg-purple-600 hover:bg-purple-500 text-white rounded-full flex items-center justify-center transition active:scale-95 shadow-lg flex-shrink-0"
-                >
-                   {bgmPaused
-                     ? <Play size={12} fill="currentColor" className="ml-0.5" />
-                     : <Pause size={12} fill="currentColor" />}
-                </button>
-                <button
-                   onClick={() => setBgmPlaylistMode(!bgmPlaylistMode)}
-                   className={`p-1.5 rounded-lg transition ${bgmPlaylistMode ? 'bg-purple-500/20 text-purple-400' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400'}`}
-                   title={bgmPlaylistMode ? "Playlist Mode (Folder)" : "Loop Single Track"}
-                >
-                   {bgmPlaylistMode ? <Repeat size={14} /> : <Repeat1 size={14} />}
-                </button>
-                <div className="flex-1 flex items-center gap-2">
-                    <VolumeX size={12} className="text-neutral-600" />
+             <div className="flex flex-col gap-3">
+                 <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => handleBgmSkip(-1)}
+                      className="p-1.5 text-neutral-400 hover:text-white transition"
+                    >
+                       <SkipBack size={14} fill="currentColor" />
+                    </button>
+                    <button
+                      onClick={() => setBgmPaused(!bgmPaused)}
+                      className="w-8 h-8 bg-purple-600 hover:bg-purple-500 text-white rounded-full flex items-center justify-center transition active:scale-95 shadow-lg flex-shrink-0"
+                    >
+                       {bgmPaused
+                         ? <Play size={14} fill="currentColor" className="ml-0.5" />
+                         : <Pause size={14} fill="currentColor" />}
+                    </button>
+                    <button
+                      onClick={() => handleBgmSkip(1)}
+                      className="p-1.5 text-neutral-400 hover:text-white transition"
+                    >
+                       <SkipForward size={14} fill="currentColor" />
+                    </button>
+
+                    <button
+                       onClick={() => {
+                          if (bgmMode === 'playlist') setBgmMode('single-no-repeat');
+                          else if (bgmMode === 'single-no-repeat') setBgmMode('single-repeat');
+                          else setBgmMode('playlist');
+                       }}
+                       className={`p-1.5 rounded-lg transition ml-2 ${bgmMode !== 'single-no-repeat' ? 'bg-purple-500/20 text-purple-400' : 'bg-neutral-800 hover:bg-neutral-700 text-neutral-400'}`}
+                       title={bgmMode === 'playlist' ? "Playlist Mode (Folder)" : bgmMode === 'single-repeat' ? "Repeat Single Track" : "Play Once"}
+                    >
+                       {bgmMode === 'playlist' ? <Repeat size={14} /> : bgmMode === 'single-repeat' ? <Repeat1 size={14} /> : <ArrowRight size={14} />}
+                    </button>
+
+                    <div className="flex-1 flex items-center gap-2 ml-2 border-l border-neutral-800 pl-3">
+                        <button onClick={() => {
+                            if (bgmVolume > 0) {
+                                bgmPreMuteVolumeRef.current = bgmVolume;
+                                setBgmVolume(0);
+                            } else {
+                                setBgmVolume(bgmPreMuteVolumeRef.current || 0.5);
+                            }
+                        }}>
+                           {bgmVolume > 0 ? <Volume2 size={14} className="text-neutral-400 hover:text-white transition" /> : <VolumeX size={14} className="text-red-500" />}
+                        </button>
+                        <input
+                            type="range" min="0" max="1" step="0.05"
+                            value={bgmVolume}
+                            onChange={(e) => setBgmVolume(parseFloat(e.target.value))}
+                            className="flex-1 h-1.5 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                        />
+                    </div>
+                 </div>
+
+                 {/* Scrubber */}
+                 <div className="flex flex-col gap-1 w-full">
                     <input
-                        type="range" min="0" max="1" step="0.05"
-                        value={bgmVolume}
-                        onChange={(e) => setBgmVolume(parseFloat(e.target.value))}
-                        className="flex-1 h-2 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
+                      type="range"
+                      min="0"
+                      max={bgmDuration || 100}
+                      step="0.1"
+                      value={Math.min(bgmCurrentTime, bgmDuration || 100)}
+                      onMouseDown={() => { bgmDraggingRef.current = true; }}
+                      onMouseUp={() => {
+                         bgmDraggingRef.current = false;
+                         if (bgmAudioRef.current) {
+                            bgmAudioRef.current.currentTime = bgmCurrentTime;
+                         }
+                      }}
+                      onChange={(e) => {
+                         setBgmCurrentTime(parseFloat(e.target.value));
+                      }}
+                      className="w-full h-1 bg-neutral-800 rounded-lg appearance-none cursor-pointer accent-purple-500"
                     />
-                </div>
+                    <div className="flex justify-between text-[9px] font-black font-mono tracking-tighter uppercase">
+                       <span className={bgmCurrentTime > 0 ? "text-purple-400" : "text-neutral-500"}>
+                          {formatTime(bgmCurrentTime)}
+                       </span>
+                       <span className={bgmDuration > 0 ? "text-neutral-400" : "text-neutral-600"}>
+                          -{formatTime(Math.max(0, bgmDuration - bgmCurrentTime))}
+                       </span>
+                    </div>
+                 </div>
              </div>
           )}
       </div>
@@ -435,15 +510,18 @@ export default function LiveControl({
           <audio 
              ref={bgmAudioRef} 
              src={bgmUrl} 
-             loop={!bgmPlaylistMode} 
+             loop={bgmMode === 'single-repeat'} 
+             onTimeUpdate={(e) => {
+                 if (!bgmDraggingRef.current) setBgmCurrentTime(e.target.currentTime);
+             }}
+             onLoadedMetadata={(e) => {
+                 setBgmDuration(e.target.duration);
+             }}
              onEnded={() => {
-                 if (bgmPlaylistMode) {
-                     const currentIndex = flatAudioFiles.findIndex(f => f.displayPath === bgmFile);
-                     if (currentIndex !== -1 && currentIndex < flatAudioFiles.length - 1) {
-                         setBgmFile(flatAudioFiles[currentIndex + 1].displayPath);
-                     } else if (flatAudioFiles.length > 0) {
-                         setBgmFile(flatAudioFiles[0].displayPath);
-                     }
+                 if (bgmMode === 'playlist') {
+                     handleBgmSkip(1);
+                 } else if (bgmMode === 'single-no-repeat') {
+                     setBgmPaused(true);
                  }
              }}
              className="hidden" 
