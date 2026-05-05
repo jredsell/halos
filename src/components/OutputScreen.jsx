@@ -504,7 +504,7 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                       key={payload.activeMediaUrl}
                       src={payload.activeMediaUrl}
                       autoPlay={isMaster ? payload.itemAutoPlay : true}
-                      muted={isMuted}
+                      defaultMuted={isMuted}
                       loop={payload.itemLoop ?? true}
                       className={`w-full h-full object-cover ${(isMaster && hasInteracted) || !isMaster ? 'pointer-events-none' : ''}`}
                       onLoadedMetadata={(e) => {
@@ -549,7 +549,7 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
                     key={payload.activeMediaUrl}
                     src={payload.activeMediaUrl}
                     autoPlay={isMaster ? payload.itemAutoPlay : true}
-                    muted={isMuted}
+                    defaultMuted={isMuted}
                     loop={payload.itemLoop ?? false}
                     className="hidden"
                     onLoadedMetadata={(e) => {
