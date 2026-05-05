@@ -319,10 +319,7 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
        if (!remoteCommand) return;
        const { command, value } = remoteCommand;
 
-       // Any play command triggers forceUnmute so YouTube/Vimeo/local audio is restored.
-       if (isMaster && command === 'play') {
-           forceUnmute();
-       }
+       // Any play command triggers play naturally. forceUnmute is handled by interaction listeners.
        if (isMaster && command === 'pause') {
            followerPausedRef.current = true;
            statusHandlerRef.current?.({ paused: true, ts: Date.now() });
