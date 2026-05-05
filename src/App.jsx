@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react'
 import { Peer } from 'peerjs'
-import { ExternalLink } from 'lucide-react'
+import { ExternalLink, Check } from 'lucide-react'
 import FileSystemSetup from './components/FileSystemSetup'
 import { getStoredDirectoryHandle } from './utils/fileSystem'
 import Sidebar from './components/Sidebar'
@@ -122,6 +122,7 @@ function App() {
   const [isLoaded, setIsLoaded] = useState(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showOfflineConfirm, setShowOfflineConfirm] = useState(false);
+  const [showAddedFeedback, setShowAddedFeedback] = useState(false);
 
   // Global Projection State
   const [isLive, setIsLive] = useState(false);
@@ -625,7 +626,13 @@ function App() {
   }
 
   if (!libraryHandle) {
-    return <FileSystemSetup onReady={(handle) => setLibraryHandle(handle)} />
+    return <FileSystemSetup onReady={async (handle) => {
+        setLibraryHandle(handle);
+        if (serviceItems && serviceItems.length > 0) {
+            const resolved = await reResolveMedia(serviceItems, handle);
+            setServiceItems(resolved);
+        }
+    }} />
   }
 
   // Control Actions
@@ -747,8 +754,9 @@ function App() {
       };
       setSelectedIndices(new Set()); // Reset after adding
     }
-
     setServiceItems([...serviceItems, { ...itemToAdd, id: Date.now().toString() }]);
+    setShowAddedFeedback(true);
+    setTimeout(() => setShowAddedFeedback(false), 2000);
   };
 
   const handleDeleteItem = (id) => {
@@ -993,10 +1001,10 @@ function App() {
                      {activeTab !== 'Service' && (
                         <button 
                            onClick={handleAddToService}
-                           className="absolute bottom-6 right-6 bg-blue-600 hover:bg-blue-500 text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl shadow-2xl border border-blue-400/30 transition active:scale-95 z-20 flex items-center gap-2"
+                           className={`absolute bottom-6 right-6 ${showAddedFeedback ? 'bg-green-600 hover:bg-green-500 border-green-400/30 shadow-[0_0_20px_rgba(34,197,94,0.4)]' : 'bg-blue-600 hover:bg-blue-500 border-blue-400/30 shadow-2xl'} text-white text-[10px] font-black uppercase tracking-widest px-4 py-2.5 rounded-xl border transition active:scale-95 z-20 flex items-center gap-2`}
                         >
-                           <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                           Add to Service
+                           {showAddedFeedback ? <Check size={14} /> : <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>}
+                           {showAddedFeedback ? 'ADDED!' : 'Add to Service'}
                         </button>
                      )}
                   </div>
@@ -1020,10 +1028,10 @@ function App() {
                            {activeTab !== 'Service' && (
                              <button 
                                onClick={handleAddToService}
-                               className="mt-4 w-full max-w-md bg-blue-600 hover:bg-blue-500 text-white text-[11px] font-black uppercase tracking-[0.2em] py-4 rounded-2xl transition shadow-xl border border-blue-400/20 active:scale-95 flex justify-center items-center gap-2 mx-auto"
+                               className={`mt-4 w-full max-w-md ${showAddedFeedback ? 'bg-green-600 hover:bg-green-500 border-green-400/20 shadow-[0_0_20px_rgba(34,197,94,0.4)]' : 'bg-blue-600 hover:bg-blue-500 border-blue-400/20 shadow-xl'} text-white text-[11px] font-black uppercase tracking-[0.2em] py-4 rounded-2xl transition border active:scale-95 flex justify-center items-center gap-2 mx-auto`}
                              >
-                               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>
-                               Add Audio to Service
+                               {showAddedFeedback ? <Check size={16} /> : <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14M5 12h14"/></svg>}
+                               {showAddedFeedback ? 'ADDED TO SERVICE' : 'Add Audio to Service'}
                              </button>
                            )}
                        </div>
