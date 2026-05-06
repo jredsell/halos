@@ -73,13 +73,6 @@ export default function Sidebar({
     if (activeTab === 'Liturgy') loadLiturgyFiles();
   }, [activeTab, systemTrigger, loadLiturgyFiles]);
   
-  // Multi-Source Integrated Search
-  const [searchMode, setSearchMode] = useState('local'); // 'local', 'songselect', 'web', 'lyrics-ovh'
-  const [ssResults, setSsResults] = useState([]);
-  const [webResults, setWebResults] = useState([]);
-  const [isSearching, setIsSearching] = useState(false);
-  const searchTimer = useRef(null);
-
   const triggerAddFeedback = () => {
      onAddToService();
      setShowAdded(true);
@@ -91,158 +84,8 @@ export default function Sidebar({
     setLocalQuery(val);
     
     if (activeTab === 'Songs') {
-      if (searchMode === 'local') {
-        if (searchState && searchState.search) searchState.search(val);
-      } else {
-        // Debounced Global Searches
-        if (searchTimer.current) clearTimeout(searchTimer.current);
-        searchTimer.current = setTimeout(() => {
-          if (searchMode === 'songselect') performSSSearch(val);
-          if (searchMode === 'web') performUniversalSearch(val);
-          if (searchMode === 'lyrics-ovh') performQuickLyricsSearch(val);
-        }, 600);
-      }
+      if (searchState && searchState.search) searchState.search(val);
     }
-  };
-
-  const performSSSearch = async (q) => {
-    if (!q.trim()) {
-      setSsResults([]);
-      return;
-    }
-    setIsSearching(true);
-    try {
-      const resp = await fetch(`/api/songselect-search?q=${encodeURIComponent(q)}`);
-      const html = await resp.text();
-      
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const items = doc.querySelectorAll('.song-item');
-      
-      const parsed = Array.from(items).map(item => {
-          const titleEl = item.querySelector('.song-item-title a');
-          const subtitleEl = item.querySelector('.song-item-subtitle');
-          return {
-              id: titleEl?.getAttribute('href') || Math.random().toString(),
-              title: titleEl?.textContent?.trim() || 'Unknown Title',
-              artist: subtitleEl?.textContent?.trim() || 'Unknown Author',
-              url: `https://songselect.ccli.com${titleEl?.getAttribute('href')}/viewlyrics`
-          };
-      });
-      setSsResults(parsed);
-    } catch (err) {
-      console.error("SS Search failed", err);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const performUniversalSearch = async (q) => {
-    if (!q.trim()) {
-      setWebResults([]);
-      return;
-    }
-    setIsSearching(true);
-    try {
-      const resp = await fetch(`/api/universal-search?q=${encodeURIComponent(q)}`);
-      const html = await resp.text();
-      
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(html, 'text/html');
-      const links = doc.querySelectorAll('.result-link');
-      
-      const parsed = Array.from(links).map(link => {
-          const row = link.closest('tr');
-          const snippet = row?.nextElementSibling?.querySelector('.result-snippet');
-          
-          let href = link.getAttribute('href');
-          // Strip DuckDuckGo's internal tracking redirect proxy
-          if (href && href.includes('uddg=')) {
-              try {
-                  const urlObj = new URL(href, 'http://localhost');
-                  href = decodeURIComponent(urlObj.searchParams.get('uddg'));
-              } catch(e) {}
-          }
-
-          return {
-              id: href,
-              title: link.textContent?.trim() || 'Unknown Title',
-              url: href,
-              snippet: snippet?.textContent?.trim() || ''
-          };
-      });
-      setWebResults(parsed);
-    } catch (err) {
-      console.error("Web Search failed", err);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const performQuickLyricsSearch = async (q) => {
-    if (!q.trim()) return;
-    setIsSearching(true);
-    try {
-      // Try to split artist and title if possible, otherwise treat as title
-      let artist = 'Various';
-      let title = q;
-      let hasFormat = false;
-      if (q.includes('-')) {
-         [artist, title] = q.split('-').map(s => s.trim());
-         hasFormat = true;
-      } else if (q.toLowerCase().includes(' by ')) {
-         [title, artist] = q.toLowerCase().split(' by ').map(s => s.trim());
-         hasFormat = true;
-      }
-
-      if (!hasFormat) {
-         setWebResults([{
-             id: 'format-tip',
-             title: 'Quick Search requires Artist - Title',
-             url: '#',
-             snippet: 'Example: "Brandon Lake - Gratitude" or "Gratitude by Brandon Lake". (Lyrics.ovh API requires splitting the artist and title).'
-         }]);
-         return;
-      }
-
-      const resp = await fetch(`/api/lyrics-ovh?artist=${encodeURIComponent(artist)}&title=${encodeURIComponent(title)}`);
-      if (resp.ok) {
-        const data = await resp.json();
-        if (data.lyrics) {
-          // Open in a virtual "Magic Import" view or just log it
-          // For now, let's just create a single result card
-          setWebResults([{ 
-              id: 'ovh-match', 
-              title: `${title} (${artist})`, 
-              url: 'virtual:lyrics-ovh', 
-              content: data.lyrics,
-              snippet: 'Found direct lyrics match! Click to import.' 
-          }]);
-        } else {
-          setWebResults([{
-             id: 'no-match',
-             title: 'No direct lyrics found in DB',
-             url: '#',
-             snippet: 'Try using the Global Web Search tab instead to scrape Google/DuckDuckGo.'
-          }]);
-        }
-      }
-    } catch (err) {
-      console.error("Lyrics.ovh failed", err);
-    } finally {
-      setIsSearching(false);
-    }
-  };
-
-  const handleOpenExternalLyrics = (res) => {
-     if (res.url === 'virtual:lyrics-ovh') {
-        // Special case: we already have the lyrics! 
-        // We'll pass them via session storage or window name
-        window.lyricsToImport = res.content;
-        window.open('about:blank', 'LyricsImporter', 'width=600,height=800');
-     } else {
-        window.open(res.url, 'LyricsImporter', 'width=600,height=800,menubar=no,location=no');
-     }
   };
 
   const handleAddExternalVideo = (e) => {
@@ -700,117 +543,47 @@ export default function Sidebar({
                 </button>
             </div>
             
-            {/* MULTI-SOURCE TOGGLE */}
-            <div className="grid grid-cols-4 gap-1 bg-neutral-900 p-1 rounded-xl border border-neutral-800/80 mb-0">
-                <button 
-                  onClick={() => { setSearchMode('local'); setSsResults([]); setWebResults([]); }}
-                  className={`py-1.5 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${searchMode === 'local' ? 'bg-neutral-800 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-400'}`}
-                >
-                    Local
-                </button>
-                <button 
-                  onClick={() => { setSearchMode('songselect'); performSSSearch(localQuery); }}
-                  className={`py-1.5 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${searchMode === 'songselect' ? 'bg-blue-600 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-400'}`}
-                >
-                    CCLI
-                </button>
-                <button 
-                  onClick={() => { setSearchMode('web'); performUniversalSearch(localQuery); }}
-                  className={`py-1.5 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${searchMode === 'web' ? 'bg-orange-600 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-400'}`}
-                >
-                    Web
-                </button>
-                <button 
-                  onClick={() => { setSearchMode('lyrics-ovh'); performQuickLyricsSearch(localQuery); }}
-                  className={`py-1.5 rounded-lg text-[8px] font-black uppercase tracking-tighter transition-all ${searchMode === 'lyrics-ovh' ? 'bg-green-600 text-white shadow-sm' : 'text-neutral-500 hover:text-neutral-400'}`}
-                >
-                    Quick
-                </button>
-            </div>
-
-            <div className="relative">
+            <div className="relative mt-3">
                 <input 
                   type="text" 
-                  placeholder={
-                    searchMode === 'local' ? "Search Library..." :
-                    searchMode === 'songselect' ? "Search CCLI SongSelect..." :
-                    searchMode === 'web' ? "Search Global Web..." :
-                    "Artist - Title (Exact Match)"
-                  } 
+                  placeholder="Search Library..." 
                   value={localQuery} 
                   onChange={handleSearch} 
                   className="w-full bg-neutral-900 border border-neutral-800/80 rounded-xl text-sm font-medium text-white pl-10 pr-3 py-3 outline-none focus:border-blue-500 transition shadow-inner" 
                 />
-                <Search size={16} className={`absolute left-3 top-1/2 -translate-y-1/2 transition-colors ${isSearching ? 'text-blue-500 animate-pulse' : 'text-neutral-400'}`} />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 transition-colors text-neutral-400" />
             </div>
 
             <AddButton />
 
             <div className="flex-1 overflow-y-auto custom-scrollbar space-y-2 mt-1 border-t border-neutral-800/50 pt-4 px-1">
-                {searchMode === 'local' && (
-                   (localQuery.trim() ? searchState.results : (searchState.allItems || [])).map(res => {
-                       const isInService = checkInService(res.id) || checkInService(res.title);
-                       return (
-                           <div 
-                                key={res.id} 
-                                onClick={() => onSelectItem({ type: 'song', ...res, slides: res.slides })} 
-                                className={`p-3 hover:bg-neutral-700/80 rounded-xl cursor-pointer border transition flex justify-between items-start ${
-                                   isInService ? 'bg-green-950/20 border-green-500/30' : 'bg-neutral-800/40 border-transparent hover:border-neutral-600'
-                                }`}
-                           >
-                               <div className="truncate pr-2 flex-1">
-                                   <div className="font-semibold text-sm text-neutral-200 truncate">{res.title}</div>
-                                   {res.artist && <div className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-1 truncate">{res.artist}</div>}
-                               </div>
-                               <div className="flex items-center gap-2">
-                                   {isInService && <CheckCircle size={14} className="text-green-500 flex-shrink-0" />}
-                                   <div 
-                                       onClick={(e) => handleDeleteSong(e, res)}
-                                       className="p-1.5 hover:bg-red-500/20 text-neutral-400 hover:text-red-400 rounded-lg transition-colors"
-                                       title="Delete Song"
-                                   >
-                                       <Trash2 size={14} />
-                                   </div>
-                               </div>
-                           </div>
-                       )
-                   })
-                )}
-
-                {searchMode === 'songselect' && ssResults.map(res => (
-                   <div 
-                        key={res.id} 
-                        onClick={() => handleOpenExternalLyrics(res)}
-                        className="p-3 bg-blue-900/10 hover:bg-blue-900/20 rounded-xl cursor-pointer border border-blue-500/10 hover:border-blue-500/40 transition group"
-                   >
-                       <div className="flex justify-between items-start mb-1">
-                           <div className="font-semibold text-sm text-neutral-200 truncate pr-2">{res.title}</div>
-                           <Sparkles size={12} className="text-blue-500 opacity-40 group-hover:opacity-100 transition-opacity flex-shrink-0" />
-                       </div>
-                       <div className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider truncate">{res.artist}</div>
-                   </div>
-                ))}
-
-                {(searchMode === 'web' || searchMode === 'lyrics-ovh') && webResults.map(res => (
-                   <div 
-                        key={res.id} 
-                        onClick={() => handleOpenExternalLyrics(res)}
-                        className={`p-3 rounded-xl cursor-pointer border transition group ${searchMode === 'web' ? 'bg-orange-900/10 border-orange-500/10 hover:border-orange-500/40 hover:bg-orange-900/20' : 'bg-green-900/10 border-green-500/10 hover:border-green-500/40 hover:bg-green-900/20'}`}
-                   >
-                       <div className="flex justify-between items-start mb-1">
-                           <div className="font-semibold text-[11px] text-neutral-200 truncate pr-2">{res.title}</div>
-                           <Search size={12} className={searchMode === 'web' ? 'text-orange-500' : 'text-green-500'} />
-                       </div>
-                       <div className="text-[9px] text-neutral-400 leading-tight line-clamp-2">{res.snippet}</div>
-                   </div>
-                ))}
-
-                {searchMode !== 'local' && ssResults.length === 0 && webResults.length === 0 && !isSearching && (
-                   <div className="text-center py-8 opacity-40">
-                       <Search size={32} className="mx-auto mb-2 text-neutral-600" />
-                       <div className="text-[10px] font-black uppercase tracking-widest">No Matches Found</div>
-                   </div>
-                )}
+                {(localQuery.trim() ? searchState.results : (searchState.allItems || [])).map(res => {
+                    const isInService = checkInService(res.id) || checkInService(res.title);
+                    return (
+                        <div 
+                             key={res.id} 
+                             onClick={() => onSelectItem({ type: 'song', ...res, slides: res.slides })} 
+                             className={`p-3 hover:bg-neutral-700/80 rounded-xl cursor-pointer border transition flex justify-between items-start ${
+                                isInService ? 'bg-green-950/20 border-green-500/30' : 'bg-neutral-800/40 border-transparent hover:border-neutral-600'
+                             }`}
+                        >
+                            <div className="truncate pr-2 flex-1">
+                                <div className="font-semibold text-sm text-neutral-200 truncate">{res.title}</div>
+                                {res.artist && <div className="text-[10px] text-neutral-400 font-bold uppercase tracking-wider mt-1 truncate">{res.artist}</div>}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                {isInService && <CheckCircle size={14} className="text-green-500 flex-shrink-0" />}
+                                <div 
+                                    onClick={(e) => handleDeleteSong(e, res)}
+                                    className="p-1.5 hover:bg-red-500/20 text-neutral-400 hover:text-red-400 rounded-lg transition-colors"
+                                    title="Delete Song"
+                                >
+                                    <Trash2 size={14} />
+                                </div>
+                            </div>
+                        </div>
+                    )
+                })}
             </div>
 
             <ConfirmModal 
