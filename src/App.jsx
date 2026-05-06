@@ -290,6 +290,12 @@ function App() {
   const [remoteCommand, setRemoteCommand] = useState(null);
   
   const [liveItem, setLiveItem] = useState(null);
+  const liveItemRef = useRef(null);
+  useEffect(() => { liveItemRef.current = liveItem; }, [liveItem]);
+
+  const selectedItemRef = useRef(null);
+  useEffect(() => { selectedItemRef.current = selectedItem; }, [selectedItem]);
+
   const [liveSlideIndex, setLiveSlideIndex] = useState(0);
 
   const [isSyncingMedia, setIsSyncingMedia] = useState(false);
@@ -366,7 +372,10 @@ function App() {
        slideshowInterval: slideshowInterval,
        itemAutoPlay: liveItem?.autoPlay || false,
        churchName: churchName,
-        stickyAudioUrl: stickyAudioItem?.url || null
+       stickyAudioUrl: stickyAudioItem?.url || null,
+       slideIndex: liveSlideIndex,
+       itemSlides: liveItem?.slides || null,
+       itemImagesCount: liveItem?.images?.length || 0
     };
 
     // Populate content if we have a LIVE selection (Locked to Service Flow)
@@ -835,9 +844,35 @@ function App() {
                  handleSelectItem(item);
              }
          } else if (data.command === 'next_slide') {
-             setLiveSlideIndex(prev => prev + 1);
+             const currentLive = liveItemRef.current;
+             const maxIndex = currentLive?.slides ? currentLive.slides.length - 1 : (currentLive?.images ? currentLive.images.length - 1 : 0);
+             
+             setLiveSlideIndex(prev => {
+                const nextIdx = Math.min(prev + 1, maxIndex);
+                if (selectedItemRef.current?.id === currentLive?.id) {
+                   setActiveSlideIndex(nextIdx);
+                }
+                return nextIdx;
+             });
          } else if (data.command === 'prev_slide') {
-             setLiveSlideIndex(prev => Math.max(0, prev - 1));
+             setLiveSlideIndex(prev => {
+                const nextIdx = Math.max(0, prev - 1);
+                if (selectedItemRef.current?.id === liveItemRef.current?.id) {
+                   setActiveSlideIndex(nextIdx);
+                }
+                return nextIdx;
+             });
+         } else if (data.command === 'set_slide_index') {
+             const currentLive = liveItemRef.current;
+             const maxIndex = currentLive?.slides ? currentLive.slides.length - 1 : (currentLive?.images ? currentLive.images.length - 1 : 0);
+             
+             setLiveSlideIndex(() => {
+                const targetIdx = Math.max(0, Math.min(data.index, maxIndex));
+                if (selectedItemRef.current?.id === currentLive?.id) {
+                   setActiveSlideIndex(targetIdx);
+                }
+                return targetIdx;
+             });
          } else if (data.command === 'black_screen') {
              setIsBlackScreen(prev => !prev);
          } else if (data.command === 'show_logo') {

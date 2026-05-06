@@ -158,9 +158,71 @@ export default function RemoteControl({ roomId }) {
                  <AlignLeft size={18} /> Clear
               </button>
            </div>
-        </div>
+         </div>
+         
+         {/* Slide Tiles / Active Item Grid */}
+         {hasSlides && (payload?.itemSlides || payload?.itemImagesCount > 0) && (
+            <div className="bg-neutral-950 p-4 border-b border-neutral-800 flex-shrink-0">
+               <h3 className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-3 pl-1">Slide Selection</h3>
+               <div className="grid grid-cols-2 gap-2 max-h-[40vh] overflow-y-auto custom-scrollbar pr-1 pb-1">
+                  {payload.itemSlides ? (
+                     payload.itemSlides.map((slide, idx) => {
+                        const isActive = payload.slideIndex === idx;
+                        return (
+                           <button
+                              key={idx}
+                              onClick={() => sendCommand('set_slide_index', { index: idx })}
+                              className={`aspect-video rounded-xl flex flex-col relative overflow-hidden transition-all active:scale-95 text-left p-3 ${
+                                 isActive 
+                                   ? 'bg-blue-600 border-2 border-blue-400 shadow-lg shadow-blue-900/50' 
+                                   : 'bg-neutral-900 border-2 border-neutral-800 hover:border-neutral-700'
+                              }`}
+                           >
+                              <div className="flex-1 w-full overflow-hidden flex items-center justify-center">
+                                 <div className={`font-black text-[10px] leading-tight w-full whitespace-pre-wrap ${
+                                    slide.alignment === 'left' ? 'text-left' : slide.alignment === 'right' ? 'text-right' : 'text-center'
+                                 } ${isActive ? 'text-white' : 'text-neutral-300'}`}>
+                                    {(slide.content || []).slice(0, 4).map((line, li) => <div key={li}>{line}</div>)}
+                                    {(slide.content || []).length > 4 && <div className="text-blue-300/50 mt-1">...</div>}
+                                 </div>
+                              </div>
+                              <div className="flex justify-between items-end mt-2">
+                                 <span className={`text-[8px] font-bold uppercase tracking-widest ${isActive ? 'text-blue-200' : 'text-neutral-500'}`}>
+                                    {slide.type || 'SLIDE'}
+                                 </span>
+                                 <span className={`text-[8px] font-bold ${isActive ? 'text-white' : 'text-neutral-600'}`}>
+                                    {idx + 1}
+                                 </span>
+                              </div>
+                           </button>
+                        );
+                     })
+                  ) : (
+                     Array.from({ length: payload.itemImagesCount }).map((_, idx) => {
+                        const isActive = payload.slideIndex === idx;
+                        return (
+                           <button
+                              key={idx}
+                              onClick={() => sendCommand('set_slide_index', { index: idx })}
+                              className={`aspect-video rounded-xl flex items-center justify-center relative overflow-hidden transition-all active:scale-95 border-2 ${
+                                 isActive 
+                                   ? 'bg-blue-600 border-blue-400 shadow-lg shadow-blue-900/50 text-white' 
+                                   : 'bg-neutral-900 border-neutral-800 hover:border-neutral-700 text-neutral-400'
+                              }`}
+                           >
+                              <div className="flex flex-col items-center gap-1">
+                                 <ImgIcon size={24} className={isActive ? 'opacity-100' : 'opacity-50'} />
+                                 <span className="text-[10px] font-bold tracking-widest uppercase">Slide {idx + 1}</span>
+                              </div>
+                           </button>
+                        );
+                     })
+                  )}
+               </div>
+            </div>
+         )}
 
-        {/* Service Flow List */}
+         {/* Service Flow List */}
         <div className="flex-1 overflow-y-auto custom-scrollbar bg-black p-4 pb-24">
            <h3 className="text-[10px] text-neutral-500 font-bold uppercase tracking-widest mb-3 pl-1">Service Flow</h3>
            <div className="flex flex-col gap-2">

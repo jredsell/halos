@@ -9,18 +9,25 @@ function AutoFitLyrics({ lines, isMaster = false, isLiveBroadcast = false, isCle
   const [fontSize, setFontSize] = useState(20);
   const isHighImpact = isMaster || isLiveBroadcast;
   
-  // Use tighter padding for Bible to maximize text area for long verses
-  const paddingClass = isHighImpact ? (mediaType === 'bible' ? "px-[6%] py-[6%]" : "px-[10%] py-[10%]") : "p-4";
+  // Tighter horizontal padding maximizes text area and prevents unwanted wrapping
+  const paddingClass = isHighImpact ? (mediaType === 'bible' ? "px-[6%] py-[6%]" : "px-[6%] py-[8%]") : "p-4";
   const opacityClass = isClearText ? "opacity-0" : "opacity-100";
   
   useEffect(() => {
     const fit = () => {
       const container = containerRef.current;
       if (!container) return;
-      // Bible verses are wordy; we use a consistent, slightly smaller multiplier (5.5vh) to fit 1080p 
-      // Songs remain large and punchy (8.5vh)
-      const multiplier = mediaType === 'bible' ? 0.055 : 0.085;
-      const targetSize = Math.max(12, Math.round(container.clientHeight * multiplier));
+      
+      // Calculate font size based on height, but cap it based on width to prevent horizontal wrapping.
+      // This is critical for Full Screen (F11) where height increases without width increasing.
+      const heightMultiplier = mediaType === 'bible' ? 0.055 : 0.085;
+      const widthMultiplier = mediaType === 'bible' ? 0.045 : 0.042;
+      
+      const targetSize = Math.max(12, Math.min(
+         Math.round(container.clientHeight * heightMultiplier),
+         Math.round(container.clientWidth * widthMultiplier)
+      ));
+      
       setFontSize(targetSize);
     };
     const ro = new ResizeObserver(fit);
