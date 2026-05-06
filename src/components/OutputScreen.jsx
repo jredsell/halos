@@ -3,25 +3,31 @@ import { Volume2, VolumeX } from 'lucide-react';
 import { getYoutubeEmbedUrl } from '../utils/media';
 
 // High-Impact Smart Scaler
-function AutoFitLyrics({ lines, isMaster = false, isLiveBroadcast = false, isClearText = false }) {
+function AutoFitLyrics({ lines, isMaster = false, isLiveBroadcast = false, isClearText = false, mediaType = 'song' }) {
   const containerRef = useRef(null);
   const textRef = useRef(null);
   const [fontSize, setFontSize] = useState(20);
   const isHighImpact = isMaster || isLiveBroadcast;
-  const paddingClass = isHighImpact ? "px-[10%] py-[10%]" : "p-4";
+  
+  // Use tighter padding for Bible to maximize text area for long verses
+  const paddingClass = isHighImpact ? (mediaType === 'bible' ? "px-[6%] py-[6%]" : "px-[10%] py-[10%]") : "p-4";
   const opacityClass = isClearText ? "opacity-0" : "opacity-100";
+  
   useEffect(() => {
     const fit = () => {
       const container = containerRef.current;
       if (!container) return;
-      const targetSize = Math.max(12, Math.round(container.clientHeight * 0.085));
+      // Bible verses are wordy; we use a consistent, slightly smaller multiplier (5.5vh) to fit 1080p 
+      // Songs remain large and punchy (8.5vh)
+      const multiplier = mediaType === 'bible' ? 0.055 : 0.085;
+      const targetSize = Math.max(12, Math.round(container.clientHeight * multiplier));
       setFontSize(targetSize);
     };
     const ro = new ResizeObserver(fit);
     if (containerRef.current) ro.observe(containerRef.current);
     fit();
     return () => ro.disconnect();
-  }, [lines, isHighImpact]);
+  }, [lines, isHighImpact, mediaType]);
   return (
     <div ref={containerRef} className={`absolute inset-0 flex items-center justify-center overflow-hidden transition-opacity duration-300 ${paddingClass} ${opacityClass}`}>
       <div ref={textRef} className="font-black text-white text-center leading-[1.3] drop-shadow-[0_4px_48px_rgba(0,0,0,1)] antialiased w-full text-balance whitespace-pre-wrap" style={{ fontSize: fontSize + 'px', wordBreak: 'break-word' }}>
@@ -629,7 +635,7 @@ export default function OutputScreen({ payload, isMaster = false, isLiveBroadcas
               )}
 
               {(payload.mediaType === 'song' || payload.mediaType === 'bible') && payload.activeSlide && payload.activeSlide.length > 0 && (
-                 <AutoFitLyrics lines={payload.activeSlide} isMaster={isMaster} isLiveBroadcast={isLiveBroadcast} isClearText={payload.isClearText} />
+                 <AutoFitLyrics lines={payload.activeSlide} isMaster={isMaster} isLiveBroadcast={isLiveBroadcast} isClearText={payload.isClearText} mediaType={payload.mediaType} />
               )}
               {payload.mediaType === 'liturgy' && payload.activeSlide && payload.activeSlide.length > 0 && (
                  <AutoFitLiturgy
