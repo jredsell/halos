@@ -44,6 +44,10 @@ export default function Sidebar({
   onToggleSticky,
   onChangeLibrary
 }) {
+  const effectiveTab = (activeTab === 'new_song' || activeTab === 'edit_song') ? 'Songs' : 
+                       (activeTab === 'new_liturgy' || activeTab === 'edit_liturgy') ? 'Liturgy' : 
+                       activeTab;
+
   const [localQuery, setLocalQuery] = useState('');
   const [showAdded, setShowAdded] = useState(false);
   const [bibleToDelete, setBibleToDelete] = useState(null);
@@ -77,7 +81,7 @@ export default function Sidebar({
   }, [libraryHandle]);
 
   useEffect(() => {
-    if (activeTab === 'Liturgy') loadLiturgyFiles();
+    if (effectiveTab === 'Liturgy') loadLiturgyFiles();
   }, [activeTab, systemTrigger, loadLiturgyFiles]);
   
   const triggerAddFeedback = () => {
@@ -90,7 +94,7 @@ export default function Sidebar({
     const val = e.target.value;
     setLocalQuery(val);
     
-    if (activeTab === 'Songs') {
+    if (effectiveTab === 'Songs') {
       if (searchState && searchState.search) searchState.search(val);
     }
   };
@@ -149,7 +153,7 @@ export default function Sidebar({
       isInitialMount.current = false;
       return;
     }
-    if (!videoUrl.trim() || activeTab !== 'Videos') return;
+    if (!videoUrl.trim() || effectiveTab !== 'Videos') return;
     
     const fetchTitle = async () => {
       // Basic check for YT/Vimeo to avoid unnecessary fetches
@@ -333,9 +337,9 @@ export default function Sidebar({
   };
 
   const confirmDeleteGenericFile = async () => {
-    if (!libraryHandle || !fileToDelete || !activeTab) return;
+    if (!libraryHandle || !fileToDelete || !effectiveTab) return;
     try {
-      const dir = await libraryHandle.getDirectoryHandle(activeTab);
+      const dir = await libraryHandle.getDirectoryHandle(effectiveTab);
       await dir.removeEntry(fileToDelete.name, { recursive: fileToDelete.isDirectory ? true : false });
       if (onDeleteItem) onDeleteItem(fileToDelete.name);
       if (onRefresh) onRefresh();
@@ -353,7 +357,7 @@ export default function Sidebar({
 
 
   // 0b. Liturgy View
-  if (activeTab === 'Liturgy') {
+  if (effectiveTab === 'Liturgy') {
     const confirmDeleteLiturgy = async () => {
       if (!libraryHandle || !liturgyToDelete) return;
       try {
@@ -547,7 +551,7 @@ export default function Sidebar({
   }
 
   // 3. Songs View
-  if (activeTab === 'Songs') {
+  if (effectiveTab === 'Songs') {
     return (
         <div className="flex flex-col h-full gap-4 pt-2 w-full">
             <div className="flex justify-between items-center">
@@ -617,7 +621,7 @@ export default function Sidebar({
   // 4. Generic Folder View (Documents, Videos, Images, Music)
   const IconProps = { size: 14, className: "text-neutral-400" };
   const getIcon = () => {
-      switch(activeTab) {
+      switch(effectiveTab) {
           case 'Videos': return <Video {...IconProps} />;
           case 'Images': return <ImgIcon {...IconProps} />;
           case 'Music': return <Headphones {...IconProps} />;
@@ -628,13 +632,13 @@ export default function Sidebar({
   return (
     <div className="flex flex-col h-full gap-4 pt-2 w-full">
       <div className="text-xs font-bold text-neutral-400 uppercase tracking-widest flex items-center gap-2">
-         {getIcon()} {activeTab} Library
+         {getIcon()} {effectiveTab} Library
       </div>
       
       <div className="relative">
         <input 
           type="text" 
-          placeholder={`Filter ${activeTab}...`}
+          placeholder={`Filter ${effectiveTab}...`}
           value={localQuery}
           onChange={(e) => setLocalQuery(e.target.value)}
           className="w-full bg-neutral-900 border border-neutral-800/80 rounded-xl text-sm font-medium text-white pl-10 pr-3 py-3 outline-none focus:border-blue-500 transition shadow-inner"
@@ -721,7 +725,7 @@ export default function Sidebar({
                        <div 
                           onClick={(e) => handleDeleteGenericFile(e, file)}
                           className="p-1.5 hover:bg-red-500/20 text-neutral-500 hover:text-red-400 rounded-lg transition-colors"
-                          title={`Delete ${activeTab.slice(0, -1)}`}
+                          title={`Delete ${effectiveTab.slice(0, -1)}`}
                        >
                           <Trash2 size={14} />
                        </div>
@@ -739,8 +743,8 @@ export default function Sidebar({
 
       <ConfirmModal 
           isOpen={!!fileToDelete}
-          title={`Delete ${activeTab.slice(0, -1)}?`}
-          message={`Are you sure you want to permanently delete "${fileToDelete?.name}" from your ${activeTab} library?`}
+          title={`Delete ${effectiveTab.slice(0, -1)}?`}
+          message={`Are you sure you want to permanently delete "${fileToDelete?.name}" from your ${effectiveTab} library?`}
           onConfirm={confirmDeleteGenericFile}
           onCancel={() => setFileToDelete(null)}
           confirmText="Delete File"

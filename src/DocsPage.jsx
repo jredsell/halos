@@ -405,6 +405,129 @@ export default function DocsPage() {
       );
     }
 
+    if (activeTab === 'songs') {
+      return (
+        <>
+          <h1 className="text-4xl font-black tracking-tight mb-12">Managing Songs</h1>
+          
+          <div className="prose prose-invert prose-blue max-w-3xl">
+            <p className="leading-relaxed text-neutral-300 mb-6">When you click on the <strong>Songs</strong> tab on the left, it brings you to the main songs page. From here, you can Add, Edit, or Delete songs from your database.</p>
+
+            <h3 className="text-xl font-bold text-white mb-4">Adding a Song</h3>
+            <p className="leading-relaxed text-neutral-300 mb-6">To add a song to your database, simply press the <strong>New</strong> icon towards the top left of the Songs tab. Here you can choose to add a song manually, import a TXT or XML file, or import directly from SongSelect.</p>
+            <img 
+              src={`${base}docs/songs/adding/add_song_1.png`} 
+              alt="Add a Song Options" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-12 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/add_song_1.png`)}
+            />
+
+            <h2 className="text-2xl font-bold text-white mb-6 border-b border-neutral-800 pb-2">Methods for Adding Songs</h2>
+            
+            <h3 className="text-xl font-bold text-white mb-4">Adding a Song Manually</h3>
+            <p className="leading-relaxed text-neutral-300 mb-6">To add a song manually, start by entering the <strong>Name</strong> of the song, the <strong>Artist</strong>, and the <strong>CCLI license number</strong> (if you know it). Then, in the lyrics box, simply type or paste your lyrics.</p>
+            <img 
+              src={`${base}docs/songs/adding/manually/manual-1.png`} 
+              alt="Adding Song Metadata" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-6 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/manually/manual-1.png`)}
+            />
+
+            <p className="leading-relaxed text-neutral-300 mb-6">Halos uses a simple tagging system to organise your song structure. By typing the <code>/</code> (forward slash) command in the lyrics box, you can tag verses, choruses, bridges, or other elements.</p>
+            <img 
+              src={`${base}docs/songs/adding/manually/manual-2.png`} 
+              alt="Using the slash command" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-6 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/manually/manual-2.png`)}
+            />
+
+            <p className="leading-relaxed text-neutral-300 mb-6">You can click on the pre-built tags from the dropdown menu to quickly assign labels. This makes it incredibly easy to see exactly how the song is structured when you are presenting.</p>
+            <img 
+              src={`${base}docs/songs/adding/manually/manual-3.png`} 
+              alt="Selecting pre-built tags" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-6 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/manually/manual-3.png`)}
+            />
+
+            <p className="leading-relaxed text-neutral-300 mb-6">If your song has more parts than the standard list provides (for example, if you need a Verse 11, Chorus 5, or Bridge 5), you can just type <code>/v11</code>, <code>/c5</code>, or <code>/b5</code> to create them instantly!</p>
+            <img 
+              src={`${base}docs/songs/adding/manually/manual-4.png`} 
+              alt="Creating numbered tags" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-6 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/manually/manual-4.png`)}
+            />
+
+            <h3 className="text-xl font-bold text-white mb-4 mt-8 border-t border-neutral-800 pt-6">Importing a File</h3>
+            <p className="leading-relaxed text-neutral-300 mb-6">You can import any TXT or XML file (which is especially handy if you are moving over from another system). Simply click the <strong>Import from File</strong> option.</p>
+            <img 
+              src={`${base}docs/songs/adding/import/import_1.png`} 
+              alt="Select Import from File" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-6 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/import/import_1.png`)}
+            />
+
+            <p className="leading-relaxed text-neutral-300 mb-6">Browse and select the file you want to import from your computer.</p>
+            <img 
+              src={`${base}docs/songs/adding/import/import_2.png`} 
+              alt="Select File" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-6 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/import/import_2.png`)}
+            />
+
+            <p className="leading-relaxed text-neutral-300 mb-6">Then, make any changes you need—like adding in a title, artist, or CCLI number if they aren't already included. Finally, add in your tags and click <strong>Save Song</strong>.</p>
+            <img 
+              src={`${base}docs/songs/adding/import/import_3.png`} 
+              alt="Edit and Save Imported Song" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-12 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/import/import_3.png`)}
+            />
+
+            <h3 className="text-xl font-bold text-white mb-4">Importing from SongSelect</h3>
+            <p className="leading-relaxed text-neutral-300 mb-6">Find the song you want to add from <a href="https://songselect.ccli.com/" target="_blank" rel="noopener noreferrer" className="text-blue-400 hover:text-blue-300 underline">SongSelect</a>, then under the lyrics &gt; sheet music options, select the copy button (the copy button is under lyrics, then there is a sheet music section, and then the copy button).</p>
+            <img 
+              src={`${base}docs/songs/adding/song_select/song_select_1.png`} 
+              alt="Copy from SongSelect" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-6 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/song_select/song_select_1.png`)}
+            />
+
+            <p className="leading-relaxed text-neutral-300 mb-6">Then, within Halos, select the <strong>Import from SongSelect</strong> option when adding a new song.</p>
+            <img 
+              src={`${base}docs/songs/adding/song_select/song_select_2.png`} 
+              alt="Select Import Option" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-6 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/song_select/song_select_2.png`)}
+            />
+
+            <p className="leading-relaxed text-neutral-300 mb-6">You may be asked to allow the application to paste, to which you should click <strong>Allow</strong>.</p>
+            <img 
+              src={`${base}docs/songs/adding/song_select/song_select_3.png`} 
+              alt="Allow paste prompt" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-6 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/song_select/song_select_3.png`)}
+            />
+
+            <p className="leading-relaxed text-neutral-300 mb-6">This will copy all the song data (artists, title, CCLI number, and song lyrics), which can then be edited before clicking <strong>Save Song</strong>.</p>
+            <img 
+              src={`${base}docs/songs/adding/song_select/song_select_4.png`} 
+              alt="Save imported song" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-6 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/song_select/song_select_4.png`)}
+            />
+
+            <h3 className="text-xl font-bold text-white mb-4 mt-8 border-t border-neutral-800 pt-6">Viewing Your Added Songs</h3>
+            <p className="leading-relaxed text-neutral-300 mb-6">Once you click Save (regardless of which add method you used), the newly added songs can instantly be seen on the left-hand side panel in your database.</p>
+            <img 
+              src={`${base}docs/songs/adding/manually/manual-5.png`} 
+              alt="Viewing added songs" 
+              className="rounded-xl border border-neutral-800 shadow-lg mb-12 cursor-pointer hover:ring-2 hover:ring-blue-500 transition-all"
+              onClick={() => setSelectedImage(`${base}docs/songs/adding/manually/manual-5.png`)}
+            />
+          </div>
+        </>
+      );
+    }
+
     if (activeTab === 'settings') {
       return (
         <>
