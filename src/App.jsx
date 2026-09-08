@@ -99,7 +99,7 @@ function App() {
   const handleChangeLibraryPath = async () => {
       try {
          const { del } = await import('idb-keyval');
-         await del('halos_library_handle');
+         await del('halos-library-handle');
          window.location.reload();
       } catch (err) {
          console.error('Failed to clear library handle', err);
@@ -1373,7 +1373,11 @@ function App() {
               setDisplayFont={setDisplayFont}
               onChangeLibrary={() => {
                   if (confirm('Are you sure you want to change the library folder? This will reload the app.')) {
-                      import('idb-keyval').then(({ del }) => del('halos_library_handle').then(() => window.location.reload()));
+                      import('idb-keyval').then(({ del }) => {
+                          del('halos-library-handle').then(() => {
+                              setTimeout(() => window.location.href = window.location.pathname, 150);
+                          });
+                      });
                   }
               }}
               onClose={() => setIsSettingsOpen(false)}

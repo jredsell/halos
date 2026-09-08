@@ -50,6 +50,18 @@
     </script>
   </head>
   <body>
+    <!-- A hidden form for Netlify to detect -->
+    <form name="feedback" data-netlify="true" netlify-honeypot="bot-field" hidden>
+      <input type="text" name="name" />
+      <input type="email" name="email" />
+      <select name="type">
+        <option value="bug">Bug</option>
+        <option value="feature">Feature Request</option>
+        <option value="other">Something Else</option>
+      </select>
+      <textarea name="message"></textarea>
+    </form>
+
     <script>
       window.deferredPWAInstallPrompt = null;
       window.addEventListener('beforeinstallprompt', (e) => {
